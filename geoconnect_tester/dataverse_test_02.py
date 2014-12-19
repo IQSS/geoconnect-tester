@@ -15,7 +15,15 @@ from os.path import abspath, dirname, isfile, join, isdir
 
 import unittest
 import json
-
+#------------------
+from django.conf import settings
+settings.configure(
+    DATABASE_ENGINE = 'django.db.backends.sqlite3',
+    DATABASE_NAME = join('test-scratch', 'scratch.db3'),
+    DATAVERSE_TOKEN_KEYNAME='GEOCONNECT_TOKEN',
+)
+#------------------
+from shared_dataverse_information.map_layer_metadata.models import MapLayerMetadata
 from selenium_utils.msg_util import *
 
 WORLDMAP_TOKEN_NAME = 'GEOCONNECT_TOKEN'
