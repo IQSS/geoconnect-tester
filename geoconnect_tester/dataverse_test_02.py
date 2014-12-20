@@ -27,7 +27,7 @@ from shared_dataverse_information.map_layer_metadata.forms import MapLayerMetada
 from selenium_utils.msg_util import *
 
 WORLDMAP_TOKEN_NAME = settings.DATAVERSE_TOKEN_KEYNAME#'GEOCONNECT_TOKEN'
-WORLDMAP_TOKEN_VALUE = 'c72beee8447d764b00b293d36bcde40ea7d690805d89af8850e3c6c2612a595c'
+WORLDMAP_TOKEN_VALUE = '625d67b230ed60a1a7707e2f2cf033d05cc11386055ca67845954309200825ba'
 DATAVERSE_SERVER = 'http://localhost:8080'
 
 class WorldMapBaseTest(unittest.TestCase):
@@ -65,12 +65,12 @@ class RetrieveFileMetadataTestCase(WorldMapBaseTest):
         return ''.join(random.SystemRandom().choice(string.uppercase + string.digits) for _ in xrange(token_length))
 
 
-    def run_test_03_delete_token(self):
+    def run_test_05_delete_token(self):
         api_url = '%s/api/worldmap/delete-token/' % (self.dataverse_server)
 
         msgt("--- Delete Token ---")
         #-----------------------------------------------------------
-        msgt("(1) Try to expire non-existent token")
+        msgn("(1) Try to expire non-existent token")
         #-----------------------------------------------------------
         params =  { self.wm_token_name : self.get_random_token() }
         try:
@@ -85,7 +85,7 @@ class RetrieveFileMetadataTestCase(WorldMapBaseTest):
         self.assertEqual(r.status_code, 404, "Random token, should give a 404 status")
                 
         #-----------------------------------------------------------
-        msgt("(2) Delete token")
+        msgn("(2) Delete token")
         #-----------------------------------------------------------
         params = self.getWorldMapTokenDict()
         try:
@@ -101,7 +101,7 @@ class RetrieveFileMetadataTestCase(WorldMapBaseTest):
         
         
         #-----------------------------------------------------------
-        msgt("(3) Try to delete again, should be a 404")
+        msgn("(3) Try to delete again, should be a 404")
         #-----------------------------------------------------------
         params = self.getWorldMapTokenDict()
         try:
@@ -115,15 +115,15 @@ class RetrieveFileMetadataTestCase(WorldMapBaseTest):
         self.assertEqual(r.status_code, 404, "Token already deleted. Should give a 404 status")
 
 
-    def run_test_02_add_map_metadata(self):
-        global WORLDMAP_TOKEN_VALUE
+    def run_test_02_map_metadata_bad_updates(self):
+        
         #-----------------------------------------------------------
-        msgt("--- Update Map Metadata metadata ---")
+        msgt("--- Test Update Map Metadata (BAD PARAMS) ---")
         #-----------------------------------------------------------
         api_url = '%s/api/worldmap/update-layer-metadata' % (self.dataverse_server)
         
         #-----------------------------------------------------------
-        msgt("(1a) Validate metadata params")
+        msgn("(1a) Validate metadata params")
         #-----------------------------------------------------------
         params = self.metadata_base_params.copy()
         f = MapLayerMetadataValidationForm(params)
@@ -136,7 +136,7 @@ class RetrieveFileMetadataTestCase(WorldMapBaseTest):
         self.assertEqual(f.is_valid(), True, "Validate map layer metadata parameters")
 
         #-----------------------------------------------------------
-        msgt("(1b) Bad token - attempt update with bad token")
+        msgn("(1b) Bad token - attempt update with bad token")
         #-----------------------------------------------------------
         bad_token = 'BAD-00dfa7597aa5361bdb1485842073e3b2505636af1c3ee7ada04a2b179bef'
         formatted_params = f.format_data_for_dataverse_api(bad_token)
@@ -153,9 +153,25 @@ class RetrieveFileMetadataTestCase(WorldMapBaseTest):
         msg(r.status_code)
         self.assertEqual(r.status_code, 401, "Bad token is rejected")
         
+        #-----------------------------------------------------------
+        msgn("(1c) No token - attempt update with bad token")
+        #-----------------------------------------------------------
+        params = self.metadata_base_params.copy()
+        params.pop('dv_session_token')
+        f = MapLayerMetadataValidationForm(params)
+        self.assertEqual(f.is_valid(), True, "Validate fresh metadata")
+        self.assertRaises(ValueError, f.format_data_for_dataverse_api)
+    
+
+    def run_test_03_map_metadata_good_update(self):
         
         #-----------------------------------------------------------
-        msgt("(1b) Good update - Send metadata to the dataverese")
+        msgt("--- Test Update Map Metadata (GOOD PARAMS) ---")
+        #-----------------------------------------------------------
+        api_url = '%s/api/worldmap/update-layer-metadata' % (self.dataverse_server)
+        
+        #-----------------------------------------------------------
+        msgn("(1) Good update - Send metadata to the dataverese")
         #-----------------------------------------------------------
         msg('api_url: %s' % api_url)
         # form contains 'good token', from top of page
@@ -179,13 +195,41 @@ class RetrieveFileMetadataTestCase(WorldMapBaseTest):
         self.assertEqual(r.json().has_key('status'), True, "Check for key 'status' in returned message")
         self.assertEqual(r.json()['status'], "OK", 'Check that  {"status":"OK"..} in returned message')
 
-        #200
-        #{"status":"OK","data":{"message":"map layer object saved!"}}
-        
-        
-        #
-        #81ee00dfa7597aa5361bdb1485842073e3b2505636af1c3ee7ada04a2b179bef
-    def run_test01_metadata(self):
+
+
+    def run_test_04_map_metadata_delete(self):
+
+         #-----------------------------------------------------------
+         msgt("--- Test Update Map Metadata (DELETE) ---")
+         #-----------------------------------------------------------
+         msg('FIRST: add legit metadata')
+         self.run_test_03_map_metadata_good_update()
+         
+         api_url = '%s/api/worldmap/delete-layer-metadata' % (self.dataverse_server)
+         
+         #-----------------------------------------------------------
+         msgn("(1) Delete map metadata from dataverese")
+         #-----------------------------------------------------------
+         msg('api_url: %s' % api_url)
+         # form contains 'good token', from top of page
+         #
+         params = self.getWorldMapTokenDict()
+         try:
+             r = requests.post(api_url, data=json.dumps(params))
+         except requests.exceptions.ConnectionError as e:
+             msgx('Connection error: %s' % e.message)
+         except:
+             msgx("Unexpected error: %s" % sys.exc_info()[0])
+
+         msg(r.text)
+         msg(r.status_code)
+         self.assertEqual(r.status_code, 200, "Map layer metadata deleted")
+         self.assertEqual(r.json().has_key('status'), True, "Check for key 'status' in returned message")
+         self.assertEqual(r.json()['status'], "OK", 'Check that  {"status":"OK"..} in returned message')
+
+   
+   
+    def run_test01_datafile_metadata(self):
         
         #-----------------------------------------------------------
         msgt("--- Retrieve metadata ---")
@@ -193,7 +237,7 @@ class RetrieveFileMetadataTestCase(WorldMapBaseTest):
         api_url = '%s/api/worldmap/datafile/' % (self.dataverse_server)
 
         #-----------------------------------------------------------
-        msgt("(1a) Try with no json params")
+        msgn("(1a) Try with no json params")
         #-----------------------------------------------------------
         msg('api_url: %s' % api_url)
         try:
@@ -206,7 +250,7 @@ class RetrieveFileMetadataTestCase(WorldMapBaseTest):
         self.assertEqual(r.status_code, 400, "Try with no json params")
 
         #-----------------------------------------------------------
-        msgt("(1b) Try with empty string token")
+        msgn("(1b) Try with empty string token")
         #-----------------------------------------------------------
         msg('api_url: %s' % api_url)
         try:
@@ -219,7 +263,7 @@ class RetrieveFileMetadataTestCase(WorldMapBaseTest):
         self.assertEqual(r.status_code, 400, "Try without a token")
 
         #-----------------------------------------------------------
-        msgt("(1c) Try a random token")
+        msgn("(1c) Try a random token")
         #-----------------------------------------------------------
         msg('api_url: %s' % api_url)
         try:
@@ -233,7 +277,7 @@ class RetrieveFileMetadataTestCase(WorldMapBaseTest):
 
 
         #-----------------------------------------------------------
-        msgt("(1d) Retrieve metadata")
+        msgn("(1d) Retrieve metadata")
         #-----------------------------------------------------------
         params = self.getWorldMapTokenDict()
         
@@ -247,7 +291,7 @@ class RetrieveFileMetadataTestCase(WorldMapBaseTest):
             msgx("Unexpected error: %s" % sys.exc_info()[0])
 
         #-----------------------------------------------------------
-        msgt("(1e) Check metadata")
+        msgn("(1e) Check metadata")
         #-----------------------------------------------------------
         self.assertEqual(r.status_code, 200, "API call successful, with a 200 response?")
         msg(r.text)
@@ -264,7 +308,7 @@ class RetrieveFileMetadataTestCase(WorldMapBaseTest):
         #-----------------------------------------------------------
         msgt("(2) Retrieve file")
         #-----------------------------------------------------------
-        msg("\n(2a) Try without token--should be forbidden")
+        msgn("(2a) Try without token--should be unauthorized")
         #-----------------------------------------------------------
         download_api_url = metadata_json['datafile_download_url']
         msg('download_api_url: %s' % download_api_url)
@@ -278,7 +322,7 @@ class RetrieveFileMetadataTestCase(WorldMapBaseTest):
         self.assertEqual(r.status_code, 401, "API call should be forbidden--not token")
 
         #-----------------------------------------------------------
-        msg("\n(2b) Try with bad token, not WorldMap token length--should be forbidden.")
+        msgn("(2b) Try with bad token, not WorldMap token length--should be forbidden.")
         #-----------------------------------------------------------
         random_non_worldmap_token = self.get_random_token(36)
         download_api_url = '%s?key=%s' % (metadata_json['datafile_download_url'], random_non_worldmap_token)
@@ -293,7 +337,7 @@ class RetrieveFileMetadataTestCase(WorldMapBaseTest):
         self.assertEqual(r.status_code, 403, "API call should be forbidden--not token")
 
         #-----------------------------------------------------------
-        msg("\n(2c) Try with bad token, WorldMap token length, but random")
+        msgn("(2c) Try with bad token, WorldMap token length, but random")
         #-----------------------------------------------------------
         random_worldmap_token = self.get_random_token()
         download_api_url = '%s?key=%s' % (metadata_json['datafile_download_url'], random_worldmap_token)
@@ -309,7 +353,7 @@ class RetrieveFileMetadataTestCase(WorldMapBaseTest):
 
 
         #-----------------------------------------------------------
-        msg("\n(2d) Legit request with real token (takes a couple of seconds to get file)")
+        msgn("(2d) Legit request with real token (takes a couple of seconds to get file)")
         #-----------------------------------------------------------
         download_api_url = '%s?key=%s' % (metadata_json['datafile_download_url'], WORLDMAP_TOKEN_VALUE)
         msg('download_api_url: %s' % download_api_url)
@@ -347,9 +391,13 @@ class RetrieveFileMetadataTestCase(WorldMapBaseTest):
 def get_suite():
     #suite = unittest.TestLoader().loadTestsFromTestCase(RetrieveFileMetadataTestCase)
     suite = unittest.TestSuite()
-    #suite.addTest(RetrieveFileMetadataTestCase('run_test01_metadata'))
-    suite.addTest(RetrieveFileMetadataTestCase('run_test_02_add_map_metadata'))
-    #suite.addTest(RetrieveFileMetadataTestCase('run_test_03_delete_token'))
+    
+    suite.addTest(RetrieveFileMetadataTestCase('run_test01_datafile_metadata'))
+    suite.addTest(RetrieveFileMetadataTestCase('run_test_02_map_metadata_bad_updates'))
+    suite.addTest(RetrieveFileMetadataTestCase('run_test_03_map_metadata_good_update'))
+    suite.addTest(RetrieveFileMetadataTestCase('run_test_04_map_metadata_delete'))
+
+    suite.addTest(RetrieveFileMetadataTestCase('run_test_05_delete_token'))
     
     #suite.addTest(WidgetTestCase('test_resize'))
     return suite
