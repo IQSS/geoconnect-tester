@@ -21,13 +21,13 @@ settings.configure(
     DATABASE_ENGINE = 'django.db.backends.sqlite3',
     DATABASE_NAME = join('test-scratch', 'scratch.db3'),
     DATAVERSE_TOKEN_KEYNAME='GEOCONNECT_TOKEN',
-)
+)    
 #------------------
-from shared_dataverse_information.map_layer_metadata.models import MapLayerMetadata
+from shared_dataverse_information.map_layer_metadata.forms import MapLayerMetadataValidationForm
 from selenium_utils.msg_util import *
 
-WORLDMAP_TOKEN_NAME = 'GEOCONNECT_TOKEN'
-WORLDMAP_TOKEN_VALUE = '0902f7c22f8e63c3a391c1cb2908155a8b712bcfda351c330b5315aaaec278b7'
+WORLDMAP_TOKEN_NAME = settings.DATAVERSE_TOKEN_KEYNAME#'GEOCONNECT_TOKEN'
+WORLDMAP_TOKEN_VALUE = 'c72beee8447d764b00b293d36bcde40ea7d690805d89af8850e3c6c2612a595c'
 DATAVERSE_SERVER = 'http://localhost:8080'
 
 class WorldMapBaseTest(unittest.TestCase):
@@ -37,6 +37,18 @@ class WorldMapBaseTest(unittest.TestCase):
         self.wm_token_name = WORLDMAP_TOKEN_NAME
         self.wm_token_value = WORLDMAP_TOKEN_VALUE
         self.dataverse_server = DATAVERSE_SERVER
+    
+        layer_name = 'power_plants_enipedia_jan_2014_kvg'
+        self.metadata_base_params = { 'worldmap_username' : 'worldmap_user'\
+                , 'layer_name' : layer_name
+                , 'layer_link' : \
+                        'http://worldmap.harvard.edu/data/geonode:%s' % layer_name\
+                , 'embed_map_link' :  \
+                        'http://worldmap.harvard.edu/maps/embed/?layer=geonode:%s' % layer_name\
+                , 'datafile_id' : 99\
+                , 'dv_session_token' : WORLDMAP_TOKEN_VALUE\
+            }
+    
     
     def getWorldMapTokenDict(self):
         return { self.wm_token_name : self.wm_token_value }
@@ -56,6 +68,7 @@ class RetrieveFileMetadataTestCase(WorldMapBaseTest):
     def run_test_03_delete_token(self):
         api_url = '%s/api/worldmap/delete-token/' % (self.dataverse_server)
 
+        msgt("--- Delete Token ---")
         #-----------------------------------------------------------
         msgt("(1) Try to expire non-existent token")
         #-----------------------------------------------------------
@@ -103,12 +116,79 @@ class RetrieveFileMetadataTestCase(WorldMapBaseTest):
 
 
     def run_test_02_add_map_metadata(self):
-        pass
+        global WORLDMAP_TOKEN_VALUE
+        #-----------------------------------------------------------
+        msgt("--- Update Map Metadata metadata ---")
+        #-----------------------------------------------------------
+        api_url = '%s/api/worldmap/update-layer-metadata' % (self.dataverse_server)
+        
+        #-----------------------------------------------------------
+        msgt("(1a) Validate metadata params")
+        #-----------------------------------------------------------
+        params = self.metadata_base_params.copy()
+        f = MapLayerMetadataValidationForm(params)
+        
+        if not f.is_valid():
+            msg(f.errors.keys())
+            msg(f.errors.values())
+            msgt('form errors: %s' % f.errors)
+
+        self.assertEqual(f.is_valid(), True, "Validate map layer metadata parameters")
+
+        #-----------------------------------------------------------
+        msgt("(1b) Bad token - attempt update with bad token")
+        #-----------------------------------------------------------
+        bad_token = 'BAD-00dfa7597aa5361bdb1485842073e3b2505636af1c3ee7ada04a2b179bef'
+        formatted_params = f.format_data_for_dataverse_api(bad_token)
+        msgt('formatted params: %s' % formatted_params)
+        msg('api_url: %s' % api_url)
+        try:
+            r = requests.post(api_url, data=json.dumps(formatted_params))
+        except requests.exceptions.ConnectionError as e:
+            msgx('Connection error: %s' % e.message)
+        except:
+            msgx("Unexpected error: %s" % sys.exc_info()[0])
+        
+        msg(r.text)
+        msg(r.status_code)
+        self.assertEqual(r.status_code, 401, "Bad token is rejected")
+        
+        
+        #-----------------------------------------------------------
+        msgt("(1b) Good update - Send metadata to the dataverese")
+        #-----------------------------------------------------------
+        msg('api_url: %s' % api_url)
+        # form contains 'good token', from top of page
+        #
+        params = self.metadata_base_params.copy()
+        f = MapLayerMetadataValidationForm(params)
+        self.assertEqual(f.is_valid(), True, "Validate fresh metadata")
+    
+        formatted_params = f.format_data_for_dataverse_api()
+        
+        try:
+            r = requests.post(api_url, data=json.dumps(formatted_params))
+        except requests.exceptions.ConnectionError as e:
+            msgx('Connection error: %s' % e.message)
+        except:
+            msgx("Unexpected error: %s" % sys.exc_info()[0])
             
+        msg(r.text)
+        msg(r.status_code)
+        self.assertEqual(r.status_code, 200, "Updated layer metadata")
+        self.assertEqual(r.json().has_key('status'), True, "Check for key 'status' in returned message")
+        self.assertEqual(r.json()['status'], "OK", 'Check that  {"status":"OK"..} in returned message')
+
+        #200
+        #{"status":"OK","data":{"message":"map layer object saved!"}}
+        
+        
+        #
+        #81ee00dfa7597aa5361bdb1485842073e3b2505636af1c3ee7ada04a2b179bef
     def run_test01_metadata(self):
         
         #-----------------------------------------------------------
-        msgt("(1) Retrieve metadata")
+        msgt("--- Retrieve metadata ---")
         #-----------------------------------------------------------
         api_url = '%s/api/worldmap/datafile/' % (self.dataverse_server)
 
@@ -267,8 +347,9 @@ class RetrieveFileMetadataTestCase(WorldMapBaseTest):
 def get_suite():
     #suite = unittest.TestLoader().loadTestsFromTestCase(RetrieveFileMetadataTestCase)
     suite = unittest.TestSuite()
-    suite.addTest(RetrieveFileMetadataTestCase('run_test01_metadata'))
-    suite.addTest(RetrieveFileMetadataTestCase('run_test_03_delete_token'))
+    #suite.addTest(RetrieveFileMetadataTestCase('run_test01_metadata'))
+    suite.addTest(RetrieveFileMetadataTestCase('run_test_02_add_map_metadata'))
+    #suite.addTest(RetrieveFileMetadataTestCase('run_test_03_delete_token'))
     
     #suite.addTest(WidgetTestCase('test_resize'))
     return suite
