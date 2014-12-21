@@ -24,11 +24,12 @@ settings.configure(
 )    
 #------------------
 from shared_dataverse_information.map_layer_metadata.forms import MapLayerMetadataValidationForm
+from shared_dataverse_information.dataverse_info.forms import DataverseInfoValidationForm
 from selenium_utils.msg_util import *
 
-WORLDMAP_TOKEN_NAME = settings.DATAVERSE_TOKEN_KEYNAME#'GEOCONNECT_TOKEN'
-WORLDMAP_TOKEN_VALUE = '625d67b230ed60a1a7707e2f2cf033d05cc11386055ca67845954309200825ba'
-DATAVERSE_SERVER = 'http://localhost:8080'
+WORLDMAP_TOKEN_NAME = settings.DATAVERSE_TOKEN_KEYNAME
+WORLDMAP_TOKEN_VALUE = 'e3ce6960598092a2406b335aca5f31d9255fe7d07f83aaec61a1b646ad063ae2'
+DATAVERSE_SERVER = 'http://127.0.0.1:8080'  #'http://localhost:8080'
 
 class WorldMapBaseTest(unittest.TestCase):
 
@@ -393,13 +394,13 @@ def get_suite():
     suite = unittest.TestSuite()
     
     suite.addTest(RetrieveFileMetadataTestCase('run_test01_datafile_metadata'))
-    suite.addTest(RetrieveFileMetadataTestCase('run_test_02_map_metadata_bad_updates'))
-    suite.addTest(RetrieveFileMetadataTestCase('run_test_03_map_metadata_good_update'))
-    suite.addTest(RetrieveFileMetadataTestCase('run_test_04_map_metadata_delete'))
+    #suite.addTest(RetrieveFileMetadataTestCase('run_test_02_map_metadata_bad_updates'))
+    #suite.addTest(RetrieveFileMetadataTestCase('run_test_03_map_metadata_good_update'))
+    #suite.addTest(RetrieveFileMetadataTestCase('run_test_04_map_metadata_delete'))
 
-    suite.addTest(RetrieveFileMetadataTestCase('run_test_05_delete_token'))
+    # Deletes token
+    #suite.addTest(RetrieveFileMetadataTestCase('run_test_05_delete_token'))
     
-    #suite.addTest(WidgetTestCase('test_resize'))
     return suite
 
 
