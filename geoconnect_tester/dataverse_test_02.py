@@ -303,6 +303,17 @@ class RetrieveFileMetadataTestCase(WorldMapBaseTest):
         metadata_json = json_resp.get('data', None)
         self.assertTrue(type(metadata_json) is not None, "Check that metadata_json is a dict")
 
+        #-----------------------------------------------------------
+        msgn("(1f) Check metadata with DataverseInfoValidationForm")
+        #-----------------------------------------------------------
+        # Metadata validation form (used directly by GeoConnect and WorldMap)
+        #
+        f = DataverseInfoValidationForm(metadata_json)
+        msg('metadata valid? %s' % f.is_valid())
+        if not f.is_valid():
+            msg (f.errors())        
+        self.assertTrue(f.is_valid(), "Check Metadata in validation form.  Errors:\n%s" % f.errors)
+
         self.assertTrue(metadata_json.has_key('datafile_download_url') is True, "Check that metadata_json has 'datafile_download_url'")
         self.assertTrue(metadata_json.has_key('datafile_filesize') is True, "Check that metadata_json has 'datafile_filesize'")
 
