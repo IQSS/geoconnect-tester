@@ -6,4 +6,4 @@ def msg(m):
 def dashes(): msg('-' * 40)
 def msgn(m): msg('\n'); msg(m); dashes()
 def msgt(m): dashes(); msg(m); dashes()
-def msgx(m): msgt(m); sys.exit(0)
+def msgx(m): msgt(m); msg('exiting..'); sys.exit(0)

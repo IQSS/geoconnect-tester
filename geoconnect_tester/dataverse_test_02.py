@@ -28,8 +28,10 @@ from shared_dataverse_information.dataverse_info.forms import DataverseInfoValid
 from selenium_utils.msg_util import *
 
 WORLDMAP_TOKEN_NAME = settings.DATAVERSE_TOKEN_KEYNAME
-WORLDMAP_TOKEN_VALUE = 'e3ce6960598092a2406b335aca5f31d9255fe7d07f83aaec61a1b646ad063ae2'
-DATAVERSE_SERVER = 'http://127.0.0.1:8080'  #'http://localhost:8080'
+WORLDMAP_TOKEN_VALUE = '584ff74656e102e5716d83656e3afa301df98ee9730de57d3a336aab8295320f'
+#https://dvn-build.hmdc.harvard.edu/api/worldmap/map-it-token-only/39/1
+#DATAVERSE_SERVER = 'http://127.0.0.1:8080'  #'http://localhost:8080'
+DATAVERSE_SERVER = 'https://dvn-build.hmdc.harvard.edu'  #'http://localhost:8080'
 
 class WorldMapBaseTest(unittest.TestCase):
 
@@ -43,13 +45,23 @@ class WorldMapBaseTest(unittest.TestCase):
         self.metadata_base_params = { 'worldmap_username' : 'worldmap_user'\
                 , 'layer_name' : layer_name
                 , 'layer_link' : \
-                        'http://worldmap.harvard.edu/data/geonode:%s' % layer_name\
+                        'https://worldmap.harvard.edu/data/geonode:%s' % layer_name\
                 , 'embed_map_link' :  \
-                        'http://worldmap.harvard.edu/maps/embed/?layer=geonode:%s' % layer_name\
-                , 'datafile_id' : 99\
+                        'https://worldmap.harvard.edu/maps/embed/?layer=geonode:%s' % layer_name\
+                #, 'datafile_id' : 99\
+                , 'map_image_link' : 'https://worldmap.harvard.edu/download/wms/14708/png?layers=geonode:power_plants_enipedia_jan_2014_kvg&width=948&bbox=76.04800165,18.31860358,132.0322222,50.78441&service=WMS&format=image/png&srs=EPSG:4326&request=GetMap&height=550'
+                , 'llbbox' : '76.04800165,18.31860358,132.0322222,50.78441'
+                , 'GeoconnectToDataverseMapLayerMetadataValidationForm'
+                , 'download_links' : ''\
                 , 'dv_session_token' : WORLDMAP_TOKEN_VALUE\
             }
-    
+        '''
+http://worldmap.harvard.edu/download/wms/14708/png?layers=geonode:power_plants_enipedia_jan_2014_kvg&width=948&bbox=76.04800165,18.31860358,132.0322222,50.78441&service=WMS&format=image/png&srs=EPSG:4326&request=GetMap&height=550
+<gmd:westBoundLongitude>76.04800165</gco:Decimal></gmd:westBoundLongitude>
+<gmd:southBoundLatitude>18.31860358</gco:Decimal></gmd:southBoundLatitude>
+<gmd:eastBoundLongitude>132.0322222</gco:Decimal></gmd:eastBoundLongitude>
+<gmd:northBoundLatitude>50.78441</gco:Decimal></gmd:northBoundLatitude>
+'''    
     
     def getWorldMapTokenDict(self):
         return { self.wm_token_name : self.wm_token_value }
@@ -80,7 +92,7 @@ class RetrieveFileMetadataTestCase(WorldMapBaseTest):
             msgx('Connection error: %s' % e.message)
         except:
             msgx("Unexpected error: %s" % sys.exc_info()[0])
-
+            
         msg(r.text)
         msg(r.status_code)
         self.assertEqual(r.status_code, 404, "Random token, should give a 404 status")
@@ -179,7 +191,7 @@ class RetrieveFileMetadataTestCase(WorldMapBaseTest):
         #
         params = self.metadata_base_params.copy()
         f = MapLayerMetadataValidationForm(params)
-        self.assertEqual(f.is_valid(), True, "Validate fresh metadata")
+        self.assertEqual(f.is_valid(), True, "Validate fresh metadata:\n%s" % f.errors)
     
         formatted_params = f.format_data_for_dataverse_api()
         
@@ -244,9 +256,14 @@ class RetrieveFileMetadataTestCase(WorldMapBaseTest):
         try:
             r = requests.post(api_url)
         except requests.exceptions.ConnectionError as e:
+            msg('error: %s' % e.message)
+            return
             msgx('Connection error: %s' % e.message)
         except:
-            msgx("Unexpected error: %s" % sys.exc_info()[0])
+            msg('error: %s' % sys.exc_info()[0])
+            #msgx("Unexpected error: %s" % sys.exc_info()[0])
+            return 
+
         msg(r.status_code)
         self.assertEqual(r.status_code, 400, "Try with no json params")
 
@@ -294,8 +311,8 @@ class RetrieveFileMetadataTestCase(WorldMapBaseTest):
         #-----------------------------------------------------------
         msgn("(1e) Check metadata")
         #-----------------------------------------------------------
-        self.assertEqual(r.status_code, 200, "API call successful, with a 200 response?")
         msg(r.text)
+        self.assertEqual(r.status_code, 200, "API call successful, with a 200 response?")
         
         json_resp = r.json()
         self.assertEqual(json_resp.get('status'), 'OK', "status is 'OK'")
@@ -311,7 +328,7 @@ class RetrieveFileMetadataTestCase(WorldMapBaseTest):
         f = DataverseInfoValidationForm(metadata_json)
         msg('metadata valid? %s' % f.is_valid())
         if not f.is_valid():
-            msg (f.errors())        
+            msg(f.errors)
         self.assertTrue(f.is_valid(), "Check Metadata in validation form.  Errors:\n%s" % f.errors)
 
         self.assertTrue(metadata_json.has_key('datafile_download_url') is True, "Check that metadata_json has 'datafile_download_url'")
@@ -404,9 +421,9 @@ def get_suite():
     #suite = unittest.TestLoader().loadTestsFromTestCase(RetrieveFileMetadataTestCase)
     suite = unittest.TestSuite()
     
-    suite.addTest(RetrieveFileMetadataTestCase('run_test01_datafile_metadata'))
+    #suite.addTest(RetrieveFileMetadataTestCase('run_test01_datafile_metadata'))
     #suite.addTest(RetrieveFileMetadataTestCase('run_test_02_map_metadata_bad_updates'))
-    #suite.addTest(RetrieveFileMetadataTestCase('run_test_03_map_metadata_good_update'))
+    suite.addTest(RetrieveFileMetadataTestCase('run_test_03_map_metadata_good_update'))
     #suite.addTest(RetrieveFileMetadataTestCase('run_test_04_map_metadata_delete'))
 
     # Deletes token

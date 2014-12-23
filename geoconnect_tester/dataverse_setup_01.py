@@ -132,7 +132,7 @@ class LoadShapefileTester:
           
           d.find_by_id_click("datasetForm:save")
           #d.find_by_id_click('datasetForm:cancelCreate')
-          pause_script(7)
+          pause_script(14)
 
           publish_dataset(self.sdriver)
 
@@ -174,9 +174,9 @@ def run_user_pete(dataverse_url):
 
 
 if __name__=='__main__':
-    #dataverse_url = 'https://dvn-build.hmdc.harvard.edu/'
+    dataverse_url = 'https://dvn-build.hmdc.harvard.edu/'
     #dataverse_url = 'https://shibtest.dataverse.org'
-    dataverse_url = 'http://127.0.0.1:8080'
+    #dataverse_url = 'http://127.0.0.1:8080'
 
 
     user_choices = OrderedDict( [\
