@@ -34,7 +34,7 @@ Assuming you left off with an open browser, as described in the previous step, d
 1.  _Copy_ the "Map Data" link.  The link will be something like:
     - https://dvn-build.hmdc.harvard.edu/api/worldmap/map-it/41/1
 1. Manually update the link, changing "map-it" to "map-it-token-only":    
-    - ```https://dvn-build.hmdc.harvard.edu/api/worldmap/map-it**-token-only**/41/1```
+    - https://dvn-build.hmdc.harvard.edu/api/worldmap/map-it-token-only/41/1
 1. Copy the link into your still open browser.  With any luck, you will see a JSON response.  
     - Example response: 
 ```javascript
@@ -52,7 +52,7 @@ Assuming you left off with an open browser, as described in the previous step, d
     - ```WORLDMAP_TOKEN_VALUE``` - Use the token value from the previous instructions
     - ```DATAVERSE_SERVER``` - Make sure the server is the same as the one from where you retrieved the token. 
 1. At the bottom of the file, under the ```get_suite()``` function, comment/uncomment the tests you would like to run:
-```
+   ```python
 def get_suite():
     suite = unittest.TestSuite()
     
