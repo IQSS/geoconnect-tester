@@ -21,7 +21,7 @@ from django.conf import settings
 settings.configure(
     DATABASE_ENGINE = 'django.db.backends.sqlite3',
     DATABASE_NAME = join('test-scratch', 'scratch.db3'),
-    DATAVERSE_TOKEN_KEYNAME='GEOCONNECT_TOKEN_VALUE',
+    DATAVERSE_TOKEN_KEYNAME='GEOCONNECT_TOKEN',
 )    
 #------------------
 from shared_dataverse_information.map_layer_metadata.forms import MapLayerMetadataValidationForm\
