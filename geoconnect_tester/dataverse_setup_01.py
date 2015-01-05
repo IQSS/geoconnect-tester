@@ -2,6 +2,8 @@ import os
 from os.path import join, abspath
 from selenium_utils.selenium_helper import SeleniumHelper
 from selenium_utils.msg_util import *
+from settings_helper import load_settings_dict
+
 from random import randint
 from collections import OrderedDict
 import json
@@ -174,7 +176,8 @@ def run_user_pete(dataverse_url):
 
 
 if __name__=='__main__':
-    dataverse_url = 'https://dvn-build.hmdc.harvard.edu/'
+    dataverse_url = load_settings_dict('settings.json')['dataverse_url']
+    #'https://dvn-build.hmdc.harvard.edu/'
     #dataverse_url = 'https://shibtest.dataverse.org'
     #dataverse_url = 'http://127.0.0.1:8080'
 
