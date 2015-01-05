@@ -32,7 +32,7 @@ Assuming you left off with an open browser, as described in the previous step, d
     - https://dvn-build.hmdc.harvard.edu/api/worldmap/map-it/41/1
 1. Manually update the link, changing "map-it" to "map-it-token-only":    
     - https://dvn-build.hmdc.harvard.edu/api/worldmap/map-it-token-only/41/1
-1. Copy the link into your still open browser.  With any luck, you will see a JSON response.  
+1. Copy the updated link into your still open browser.  With any luck, you will see a JSON response.  
     - Example response: 
     ```javascript
 { "status":"OK",
