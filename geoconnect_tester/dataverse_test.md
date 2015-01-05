@@ -37,14 +37,12 @@ Assuming you left off with an open browser, as described in the previous step, d
     - https://dvn-build.hmdc.harvard.edu/api/worldmap/map-it**-token-only**/41/1
 1. Copy the link into your still open browser.  With any luck, you will see a JSON response.  
     - Example response: 
-    
 ```javascript
 { "status":"OK",
   "data":
      {"GEOCONNECT_TOKEN":"f32ab9cfc1e6cef6d5f6c9c7d13bb865369dd584d65fabb4b11c6593c38f16c4"}
 }
 ```
-
 1.  Copy the value of ```GEOCONNECT_TOKEN```.  In the example, the value is ```f32ab9cfc1e6cef6d5f6c9c7d13bb865369dd584d65fabb4b11c6593c38f16c4```
 
 ### Run the tests
