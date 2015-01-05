@@ -4,14 +4,12 @@
 
 This first step uses selenium to add a mappable dataset to the selected Dataverse.
 
-1.  Open dataverse_setup_01.py
+1.  Open ```dataverse_setup_01.py```
   - At the bottom of the file, set the proper ```dataverse_url``` and any user creds.
 1.  Save the file.
 1.  Run ```python dataverse_setup_01.py```.  Example output:
 
 ```
-$ python dataverse_setup_01.py 
-
 Please run with one of the choices below:
 
  1 - run_user_admin
