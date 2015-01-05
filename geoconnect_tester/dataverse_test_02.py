@@ -23,12 +23,13 @@ settings.configure(
     DATAVERSE_TOKEN_KEYNAME='GEOCONNECT_TOKEN',
 )    
 #------------------
-from shared_dataverse_information.map_layer_metadata.forms import MapLayerMetadataValidationForm
+from shared_dataverse_information.map_layer_metadata.forms import MapLayerMetadataValidationForm\
+            , GeoconnectToDataverseMapLayerMetadataValidationForm
 from shared_dataverse_information.dataverse_info.forms import DataverseInfoValidationForm
 from selenium_utils.msg_util import *
 
 WORLDMAP_TOKEN_NAME = settings.DATAVERSE_TOKEN_KEYNAME
-WORLDMAP_TOKEN_VALUE = '584ff74656e102e5716d83656e3afa301df98ee9730de57d3a336aab8295320f'
+WORLDMAP_TOKEN_VALUE = 'f32ab9cfc1e6cef6d5f6c9c7d13bb865369dd584d65fabb4b11c6593c38f16c4'
 #https://dvn-build.hmdc.harvard.edu/api/worldmap/map-it-token-only/39/1
 #DATAVERSE_SERVER = 'http://127.0.0.1:8080'  #'http://localhost:8080'
 DATAVERSE_SERVER = 'https://dvn-build.hmdc.harvard.edu'  #'http://localhost:8080'
@@ -49,9 +50,9 @@ class WorldMapBaseTest(unittest.TestCase):
                 , 'embed_map_link' :  \
                         'https://worldmap.harvard.edu/maps/embed/?layer=geonode:%s' % layer_name\
                 #, 'datafile_id' : 99\
-                , 'map_image_link' : 'https://worldmap.harvard.edu/download/wms/14708/png?layers=geonode:power_plants_enipedia_jan_2014_kvg&width=948&bbox=76.04800165,18.31860358,132.0322222,50.78441&service=WMS&format=image/png&srs=EPSG:4326&request=GetMap&height=550'
+                , 'map_image_link' : 'http://worldmap.harvard.edu/download/wms/14708/png?layers=geonode:power_plants_enipedia_jan_2014_kvg&width=948&bbox=76.04800165,18.31860358,132.0322222,50.78441&service=WMS&format=image/png&srs=EPSG:4326&request=GetMap&height=550'
                 , 'llbbox' : '76.04800165,18.31860358,132.0322222,50.78441'
-                , 'GeoconnectToDataverseMapLayerMetadataValidationForm'
+                , 'attribute_info' : '{ "blah" : "blah-to-meet-reqs"}'
                 , 'download_links' : ''\
                 , 'dv_session_token' : WORLDMAP_TOKEN_VALUE\
             }
@@ -139,7 +140,7 @@ class RetrieveFileMetadataTestCase(WorldMapBaseTest):
         msgn("(1a) Validate metadata params")
         #-----------------------------------------------------------
         params = self.metadata_base_params.copy()
-        f = MapLayerMetadataValidationForm(params)
+        f = GeoconnectToDataverseMapLayerMetadataValidationForm(params)
         
         if not f.is_valid():
             msg(f.errors.keys())
@@ -171,7 +172,7 @@ class RetrieveFileMetadataTestCase(WorldMapBaseTest):
         #-----------------------------------------------------------
         params = self.metadata_base_params.copy()
         params.pop('dv_session_token')
-        f = MapLayerMetadataValidationForm(params)
+        f = GeoconnectToDataverseMapLayerMetadataValidationForm(params)
         self.assertEqual(f.is_valid(), True, "Validate fresh metadata")
         self.assertRaises(ValueError, f.format_data_for_dataverse_api)
     
@@ -190,7 +191,7 @@ class RetrieveFileMetadataTestCase(WorldMapBaseTest):
         # form contains 'good token', from top of page
         #
         params = self.metadata_base_params.copy()
-        f = MapLayerMetadataValidationForm(params)
+        f = GeoconnectToDataverseMapLayerMetadataValidationForm(params)
         self.assertEqual(f.is_valid(), True, "Validate fresh metadata:\n%s" % f.errors)
     
         formatted_params = f.format_data_for_dataverse_api()
@@ -418,7 +419,6 @@ class RetrieveFileMetadataTestCase(WorldMapBaseTest):
 
 
 def get_suite():
-    #suite = unittest.TestLoader().loadTestsFromTestCase(RetrieveFileMetadataTestCase)
     suite = unittest.TestSuite()
     
     #suite.addTest(RetrieveFileMetadataTestCase('run_test01_datafile_metadata'))

@@ -198,7 +198,7 @@ Please run with one of the choices below:
 %s
 
 example:
-$ python dv_browser.py 1
+$ python dataverse_setup_01.py 1
         """ % ('\n'.join(info_lines))
 
 
