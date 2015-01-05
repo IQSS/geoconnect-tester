@@ -5,8 +5,8 @@
 
 This first step uses selenium to add a mappable dataset to the selected Dataverse.
 
-1.  Open ```dataverse_setup_01.py```
-  - At the bottom of the file, set the proper ```dataverse_url``` and any user creds.
+1.  Copy ```settings_template.json``` to a new file named ```settings.json```
+  - In the file, set the proper ```dataverse_url```
 1.  Save the file.
 1.  Run ```python dataverse_setup_01.py```.  Example output:
    ```
@@ -44,10 +44,18 @@ Assuming you left off with an open browser, as described in the previous step, d
 
 ### Run the tests
 
-1. Open ```dataverse_test_02.py```
+1. Open the ```settings.json``` file
 1. At the top of the file, update the following values:
-    - ```WORLDMAP_TOKEN_VALUE``` - Use the token value from the previous instructions
-    - ```DATAVERSE_SERVER``` - Make sure the server is the same as the one from where you retrieved the token. 
+    - ```GEOCONNECT_TOKEN_VALUE``` - Use the token value from the previous instructions
+    - Example of settings.json file and the GEOCONNECT_TOKEN_VALUE:
+    ```javascript
+    { 
+        "dataverse_url" : "https://dvn-build.hmdc.harvard.edu/",
+        "GEOCONNECT_TOKEN_VALUE" : "f32ab9cfc1e6cef6d5f6c9c7d13bb865369dd584d65fabb4b11c6593c38f16c4",
+        "WORLDMAP_SERVER" : "http://107.22.231.227/",
+        "WORLDMAP_TOKEN" : "some-token-value"
+    }
+    ```
 1. At the bottom of the file, under the ```get_suite()``` function, comment/uncomment the tests you would like to run:
    ```python
 def get_suite():

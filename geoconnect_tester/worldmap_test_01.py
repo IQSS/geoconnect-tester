@@ -28,7 +28,7 @@ from shared_dataverse_information.map_layer_metadata.forms import MapLayerMetada
 from shared_dataverse_information.dataverse_info.forms import DataverseInfoValidationForm
 from selenium_utils.msg_util import *
 
-WORLDMAP_TOKEN_NAME = settings.DATAVERSE_TOKEN_KEYNAME
+DATAVERSE_TOKEN_NAME = settings.DATAVERSE_TOKEN_KEYNAME
 WORLDMAP_TOKEN_VALUE = 'f32ab9cfc1e6cef6d5f6c9c7d13bb865369dd584d65fabb4b11c6593c38f16c4'
 #https://dvn-build.hmdc.harvard.edu/api/worldmap/map-it-token-only/39/1
 #DATAVERSE_SERVER = 'http://127.0.0.1:8080'  #'http://localhost:8080'
@@ -37,8 +37,8 @@ DATAVERSE_SERVER = 'https://dvn-build.hmdc.harvard.edu'  #'http://localhost:8080
 class WorldMapBaseTest(unittest.TestCase):
 
     def setUp(self):
-        global WORLDMAP_TOKEN_NAME, WORLDMAP_TOKEN_VALUE, DATAVERSE_SERVER
-        self.wm_token_name = WORLDMAP_TOKEN_NAME
+        global DATAVERSE_TOKEN_NAME, WORLDMAP_TOKEN_VALUE, DATAVERSE_SERVER
+        self.wm_token_name = DATAVERSE_TOKEN_NAME
         self.wm_token_value = WORLDMAP_TOKEN_VALUE
         self.dataverse_server = DATAVERSE_SERVER
     

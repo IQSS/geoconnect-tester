@@ -12,6 +12,7 @@ import requests
 import random
 import string
 from os.path import abspath, dirname, isfile, join, isdir
+from settings_helper import load_settings_dict
 
 import unittest
 import json
@@ -20,7 +21,7 @@ from django.conf import settings
 settings.configure(
     DATABASE_ENGINE = 'django.db.backends.sqlite3',
     DATABASE_NAME = join('test-scratch', 'scratch.db3'),
-    DATAVERSE_TOKEN_KEYNAME='GEOCONNECT_TOKEN',
+    DATAVERSE_TOKEN_KEYNAME='GEOCONNECT_TOKEN_VALUE',
 )    
 #------------------
 from shared_dataverse_information.map_layer_metadata.forms import MapLayerMetadataValidationForm\
@@ -28,18 +29,20 @@ from shared_dataverse_information.map_layer_metadata.forms import MapLayerMetada
 from shared_dataverse_information.dataverse_info.forms import DataverseInfoValidationForm
 from selenium_utils.msg_util import *
 
-WORLDMAP_TOKEN_NAME = settings.DATAVERSE_TOKEN_KEYNAME
-WORLDMAP_TOKEN_VALUE = 'f32ab9cfc1e6cef6d5f6c9c7d13bb865369dd584d65fabb4b11c6593c38f16c4'
+GEOCONNECT_TOKEN_VALUE_NAME = settings.DATAVERSE_TOKEN_KEYNAME
+GEOCONNECT_TOKEN_VALUE = load_settings_dict('settings.json')['GEOCONNECT_TOKEN_VALUE']
+DATAVERSE_SERVER =  load_settings_dict('settings.json')['dataverse_url']
+
 #https://dvn-build.hmdc.harvard.edu/api/worldmap/map-it-token-only/39/1
 #DATAVERSE_SERVER = 'http://127.0.0.1:8080'  #'http://localhost:8080'
-DATAVERSE_SERVER = 'https://dvn-build.hmdc.harvard.edu'  #'http://localhost:8080'
+#DATAVERSE_SERVER = 'https://dvn-build.hmdc.harvard.edu'  #'http://localhost:8080'
 
 class WorldMapBaseTest(unittest.TestCase):
 
     def setUp(self):
-        global WORLDMAP_TOKEN_NAME, WORLDMAP_TOKEN_VALUE, DATAVERSE_SERVER
-        self.wm_token_name = WORLDMAP_TOKEN_NAME
-        self.wm_token_value = WORLDMAP_TOKEN_VALUE
+        global GEOCONNECT_TOKEN_VALUE_NAME, GEOCONNECT_TOKEN_VALUE, DATAVERSE_SERVER
+        self.wm_token_name = GEOCONNECT_TOKEN_VALUE_NAME
+        self.wm_token_value = GEOCONNECT_TOKEN_VALUE
         self.dataverse_server = DATAVERSE_SERVER
     
         layer_name = 'power_plants_enipedia_jan_2014_kvg'
@@ -54,7 +57,7 @@ class WorldMapBaseTest(unittest.TestCase):
                 , 'llbbox' : '76.04800165,18.31860358,132.0322222,50.78441'
                 , 'attribute_info' : '{ "blah" : "blah-to-meet-reqs"}'
                 , 'download_links' : ''\
-                , 'dv_session_token' : WORLDMAP_TOKEN_VALUE\
+                , 'dv_session_token' : GEOCONNECT_TOKEN_VALUE\
             }
         '''
 http://worldmap.harvard.edu/download/wms/14708/png?layers=geonode:power_plants_enipedia_jan_2014_kvg&width=948&bbox=76.04800165,18.31860358,132.0322222,50.78441&service=WMS&format=image/png&srs=EPSG:4326&request=GetMap&height=550
@@ -385,7 +388,7 @@ class RetrieveFileMetadataTestCase(WorldMapBaseTest):
         #-----------------------------------------------------------
         msgn("(2d) Legit request with real token (takes a couple of seconds to get file)")
         #-----------------------------------------------------------
-        download_api_url = '%s?key=%s' % (metadata_json['datafile_download_url'], WORLDMAP_TOKEN_VALUE)
+        download_api_url = '%s?key=%s' % (metadata_json['datafile_download_url'], GEOCONNECT_TOKEN_VALUE)
         msg('download_api_url: %s' % download_api_url)
         try:
             r = requests.get(download_api_url)
@@ -421,10 +424,10 @@ class RetrieveFileMetadataTestCase(WorldMapBaseTest):
 def get_suite():
     suite = unittest.TestSuite()
     
-    #suite.addTest(RetrieveFileMetadataTestCase('run_test01_datafile_metadata'))
-    #suite.addTest(RetrieveFileMetadataTestCase('run_test_02_map_metadata_bad_updates'))
+    suite.addTest(RetrieveFileMetadataTestCase('run_test01_datafile_metadata'))
+    suite.addTest(RetrieveFileMetadataTestCase('run_test_02_map_metadata_bad_updates'))
     suite.addTest(RetrieveFileMetadataTestCase('run_test_03_map_metadata_good_update'))
-    #suite.addTest(RetrieveFileMetadataTestCase('run_test_04_map_metadata_delete'))
+    suite.addTest(RetrieveFileMetadataTestCase('run_test_04_map_metadata_delete'))
 
     # Deletes token
     #suite.addTest(RetrieveFileMetadataTestCase('run_test_05_delete_token'))
