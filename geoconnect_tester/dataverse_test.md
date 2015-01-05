@@ -1,4 +1,5 @@
-## Somewhat convoluted method to test the dataverse API for mapping
+## Test the dataverse API for mapping*
+#### (A somewhat convoluted method)
 
 ### Create a dataverse with a mappable (public) dataset
 
