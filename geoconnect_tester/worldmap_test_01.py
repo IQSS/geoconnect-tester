@@ -31,6 +31,8 @@ settings.configure(
 from shared_dataverse_information.worldmap_api_helper.url_helper import ADD_SHAPEFILE_API_PATH
 from shared_dataverse_information.shapefile_import.forms import ShapefileImportDataForm
 
+from shared_dataverse_information.map_layer_metadata.forms import MapLayerMetadataValidationForm
+
 
 from selenium_utils.msg_util import *
 
@@ -53,7 +55,11 @@ class WorldMapBaseTest(unittest.TestCase):
         assert isfile(shapefile_info_test_fixture_fname), "Shapefile test fixture file not found: %s" % shapefile_info_test_fixture_fname
         self.shapefile_test_info = json.loads(open(shapefile_info_test_fixture_fname, 'r').read())
         
-        
+        self.test_shapefile_name = join('input', 'social_disorder_in_boston_yqh.zip')
+        assert isfile(self.test_shapefile_name), "Test shapefile not found: %s" % self.test_shapefile_name
+    
+        self.test_bad_file = join('input', 'meditation-gray-matter-rebuild.pdf')
+        assert isfile(self.test_bad_file), "Bad test file not found: %s" % self.test_bad_file
     
     def getWorldMapTokenDict(self):
         global WORLMAP_TOKEN_NAME, WORLDMAP_TOKEN_VALUE
@@ -89,12 +95,13 @@ class TestWorldMapShapefileImport(WorldMapBaseTest):
         except:
             msgx("Unexpected error: %s" % sys.exc_info()[0])
         
+        msg(r.status_code)
+        
         self.assertEqual(r.status_code, 401, "Should receive 401 error.  Received: %s\n%s" % (r.status_code, r.text))
         expected_msg = 'The request must be a POST.'
         self.assertEqual(r.json().get('message'), expected_msg\
                 , 'Should receive message: "%s".  Received: %s' % (expected_msg, r.text))
         
-
         #-----------------------------------------------------------
         msgn("(1b) Try with bad token")
         #-----------------------------------------------------------
@@ -106,29 +113,92 @@ class TestWorldMapShapefileImport(WorldMapBaseTest):
         except:
             msgx("Unexpected error: %s" % sys.exc_info()[0])
 
+        msg(r.status_code)
+
         self.assertEqual(r.status_code, 401, "Should receive 401 error.  Received: %s\n%s" % (r.status_code, r.text))
         expected_msg = 'Authentication failed.'
         self.assertEqual(r.json().get('message'), expected_msg\
                 , 'Should receive message: "%s".  Received: %s' % (expected_msg, r.text))
 
+
         #-----------------------------------------------------------
-        msgn("(1c) Try with token but no payload")
+        msgn("(1c) Test data upload WITHOUT file against WorldMap")
         #-----------------------------------------------------------
+        # Get basic shapefile info (missing dataverse info)
+        test_shapefile_info = self.shapefile_test_info.copy()
+
+        # add token
+        test_shapefile_info.update(self.getWorldMapTokenDict())
+
+        # add dv info
+        test_shapefile_info.update(self.dataverse_test_info)
+
+        #msgt(test_shapefile_info)
+        msg('api url: %s' % api_url)
         try:
-            r = requests.post(api_url, data=self.getWorldMapTokenDict() )
+            r = requests.post(api_url\
+                            , data=test_shapefile_info)
         except requests.exceptions.ConnectionError as e:
             msgx('Connection error: %s' % e.message)
         except:
             msgx("Unexpected error: %s" % sys.exc_info()[0])
 
-        self.assertEqual(r.status_code, 200, "Should receive 200 error.  Received: %s\n%s" % (r.status_code, r.text))
+        msg(r.status_code)
+        #msg(r.text)
+        self.assertEqual(r.status_code, 400, "Should receive 400 error.  Received: %s\n%s" % (r.status_code, r.text))
+        expected_msg = 'File not found.  Did you send a file?'
+        self.assertEqual(r.json().get('message'), expected_msg\
+                    , 'Should receive message: "%s".  Received: %s' % (expected_msg, r.text))
+
+
+        #-----------------------------------------------------------
+        msgn("(1d) Test data upload TWO FILES against WorldMap")
+        #-----------------------------------------------------------
+        files = {   'file': open( self.test_shapefile_name, 'rb')\
+                    , 'file1': open( self.test_shapefile_name, 'rb')\
+                }
+    
+        try:
+            r = requests.post(api_url, data=self.getWorldMapTokenDict(), files=files )
+        except requests.exceptions.ConnectionError as e:
+            msgx('Connection error: %s' % e.message)
+        except:
+            msgx("Unexpected error: %s" % sys.exc_info()[0])
+
+        msg(r.status_code)
+        
+        self.assertEqual(r.status_code, 400, "Should receive 400 error.  Received: %s\n%s" % (r.status_code, r.text))
+        expected_msg = "This request only accepts a single file"
+        self.assertEqual(r.json().get('message'), expected_msg\
+                , 'Should receive message: "%s".  Received: %s' % (expected_msg, r.text))
+        
+
+        
+        #-----------------------------------------------------------
+        msgn("(1e) Try with token and file but no payload")
+        #-----------------------------------------------------------
+        # prep file
+        files = {'file': open( self.test_shapefile_name, 'rb')}
+    
+        try:
+            r = requests.post(api_url, data=self.getWorldMapTokenDict(), files=files )
+        except requests.exceptions.ConnectionError as e:
+            msgx('Connection error: %s' % e.message)
+        except:
+            msgx("Unexpected error: %s" % sys.exc_info()[0])
+
+        msg(r.status_code)
+        
+        self.assertEqual(r.status_code, 400, "Should receive 400 error.  Received: %s\n%s" % (r.status_code, r.text))
         expected_msg = "Incorrect params for ShapefileImportDataForm: <br /><ul class=\"errorlist\"><li>dv_user_email<ul class=\"errorlist\"><li>This field is required.</li></ul></li><li>abstract<ul class=\"errorlist\"><li>This field is required.</li></ul></li><li>shapefile_name<ul class=\"errorlist\"><li>This field is required.</li></ul></li><li>title<ul class=\"errorlist\"><li>This field is required.</li></ul></li></ul>"
         self.assertEqual(r.json().get('message'), expected_msg\
                 , 'Should receive message: "%s".  Received: %s' % (expected_msg, r.text))
         
+
+
         
         #-----------------------------------------------------------
-        msgn("(1d) Test data with missing 'title' against ShapefileImportDataForm")
+        msgn("(1f) Test data with missing 'title' against ShapefileImportDataForm")
         #-----------------------------------------------------------
         # Pop 'title' from shapefile info
         #
@@ -146,7 +216,7 @@ class TestWorldMapShapefileImport(WorldMapBaseTest):
 
 
         #-----------------------------------------------------------
-        msgn("(1e) Test good data against ShapefileImportDataForm")
+        msgn("(1g) Test good data against ShapefileImportDataForm")
         #-----------------------------------------------------------
         # Pop 'title' from shapefile info
         #
@@ -155,211 +225,131 @@ class TestWorldMapShapefileImport(WorldMapBaseTest):
         f2_shapefile_info = ShapefileImportDataForm(test_shapefile_info)
         self.assertTrue(f2_shapefile_info.is_valid(), "Data should be valid")
 
-        return
         #-----------------------------------------------------------
-        msgn("(1f) Test partial data upload against WorldMap")
+        msgn("(1h) Test INCOMPLETE data upload against WorldMap")
         #-----------------------------------------------------------
         # Get basic shapefile info (missing dataverse info)
         test_shapefile_info = self.shapefile_test_info.copy()
 
-        # add tokend
+        # prep file
+        files = {'file': open( self.test_shapefile_name, 'rb')}
+
+        # add token
         test_shapefile_info.update(self.getWorldMapTokenDict())
-        msgt(test_shapefile_info)
+        #msgt(test_shapefile_info)
         msg('api url: %s' % api_url)
         try:
-            r = requests.post(api_url, data=test_shapefile_info)#json.dumps(test_shapefile_info) )
+            r = requests.post(api_url, data=test_shapefile_info, files=files)
         except requests.exceptions.ConnectionError as e:
             msgx('Connection error: %s' % e.message)
         except:
             msgx("Unexpected error: %s" % sys.exc_info()[0])
     
         msg(r.status_code)
-        msg(r.text)
-
-        return
-        msg(dir(f1_shapefile_info.errors))
-        msg(f1_shapefile_info.errors.values())
-        #"Validation failed with ShapefileImportDataForm\nErrors: %s" % f1_shapefile_info.errors.values())
-        return
-        msg(r.status_code)
-        msg(r.text)
-        return
-        msgt('dataverse_test_info')
-        msg(self.dataverse_test_info)
-        msgt('shapefile_test_info')
-        msg(self.shapefile_test_info)
-        msgt('api_url: %s' % api_url)
+    
+        self.assertEqual(r.status_code, 400, "Should receive 400 error.  Received: %s\n%s" % (r.status_code, r.text))
+        expected_msg = '(The WorldMap could not verify the data.)'
+        self.assertEqual(r.json().get('message'), expected_msg\
+                    , 'Should receive message: "%s".  Received: %s' % (expected_msg, r.text))
+    
         
-        form_shapefile_info = ShapefileImportDataForm(self.shapefile_test_info)
-        self.assertTrue(form_shapefile_info.is_valid(), "Validation failed with ShapefileImportDataForm\nErrors: %s" % form_shapefile_info.errors)
-
-        #msg( form_shapefile_info.is_valid())
-        return
-        '''
-        try:
-            r = requests.post(api_url)
-        except requests.exceptions.ConnectionError as e:
-            msg('error: %s' % e.message)
-            return
-            msgx('Connection error: %s' % e.message)
-        except:
-            msg('error: %s' % sys.exc_info()[0])
-            #msgx("Unexpected error: %s" % sys.exc_info()[0])
-            return 
-
-        msg(r.status_code)
-        self.assertEqual(r.status_code, 400, "Try with no json params")
 
         #-----------------------------------------------------------
-        msgn("(1b) Try with empty string token")
+        msgn("(1i) Test BAD shapefile upload against WorldMap")
         #-----------------------------------------------------------
-        msg('api_url: %s' % api_url)
-        try:
-            r = requests.post(api_url, data=json.dumps({ self.wm_token_name: ''} ))
-        except requests.exceptions.ConnectionError as e:
-            msgx('Connection error: %s' % e.message)
-        except:
-            msgx("Unexpected error: %s" % sys.exc_info()[0])
-        msg(r.status_code)
-        self.assertEqual(r.status_code, 400, "Try without a token")
+        # Get basic shapefile info (missing dataverse info)
+        test_shapefile_info = self.shapefile_test_info.copy()
 
-        #-----------------------------------------------------------
-        msgn("(1c) Try a random token")
-        #-----------------------------------------------------------
-        msg('api_url: %s' % api_url)
-        try:
-            r = requests.post(api_url, data=json.dumps({ self.wm_token_name: self.get_random_token() } ))
-        except requests.exceptions.ConnectionError as e:
-            msgx('Connection error: %s' % e.message)
-        except:
-            msgx("Unexpected error: %s" % sys.exc_info()[0])
-        msg(r.status_code)
-        self.assertEqual(r.status_code, 401, "Try without a random token")
+        # add token
+        test_shapefile_info.update(self.getWorldMapTokenDict())
 
-
-        #-----------------------------------------------------------
-        msgn("(1d) Retrieve metadata")
-        #-----------------------------------------------------------
-        params = self.getWorldMapTokenDict()
+        # add dv info
+        test_shapefile_info.update(self.dataverse_test_info)
+        test_shapefile_info['datafile_id'] = 4001
         
-        msg('api_url: %s' % api_url)     
-        msg('params: %s' % params)     
+        # prep file        
+        files = {'file': open(self.test_bad_file, 'rb')}
+        
+        #msgt(test_shapefile_info)
+        msg('api url: %s' % api_url)
         try:
-            r = requests.post(api_url, data=json.dumps(params))
+            r = requests.post(api_url\
+                            , data=test_shapefile_info\
+                            , files=files)
         except requests.exceptions.ConnectionError as e:
             msgx('Connection error: %s' % e.message)
         except:
             msgx("Unexpected error: %s" % sys.exc_info()[0])
 
-        #-----------------------------------------------------------
-        msgn("(1e) Check metadata")
-        #-----------------------------------------------------------
+        msg(r.status_code)
         msg(r.text)
-        self.assertEqual(r.status_code, 200, "API call successful, with a 200 response?")
+        self.assertEqual(r.status_code, 500, "Should receive 500 message.  Received: %s\n%s" % (r.status_code, r.text))
+        expected_err = 'Unexpected error during upload:'
+        self.assertTrue(r.text.find(expected_err) > -1\
+                    , "Should have message containing %s\nFound: %s" \
+                        % (expected_err, r.text)\
+                    )
+    
         
+        #-----------------------------------------------------------
+        msgn("(1j) Good: Test shapefile upload against WorldMap")
+        #-----------------------------------------------------------
+        # Get basic shapefile info (missing dataverse info)
+        test_shapefile_info = self.shapefile_test_info.copy()
+
+        # add token
+        test_shapefile_info.update(self.getWorldMapTokenDict())
+
+        # add dv info
+        test_shapefile_info.update(self.dataverse_test_info)
+
+        # prep file
+        files = {'file': open( self.test_shapefile_name, 'rb')}
+        
+        #msgt(test_shapefile_info)
+        msg('api url: %s' % api_url)
+        try:
+            r = requests.post(api_url\
+                            , data=test_shapefile_info\
+                            , files=files)
+        except requests.exceptions.ConnectionError as e:
+            msgx('Connection error: %s' % e.message)
+        except:
+            msgx("Unexpected error: %s" % sys.exc_info()[0])
+
+        msg(r.status_code)
+        msg(r.text)
+
+        self.assertEqual(r.status_code, 200, "Should receive 200 message.  Received: %s\n%s" % (r.status_code, r.text))
+
         json_resp = r.json()
-        self.assertEqual(json_resp.get('status'), 'OK', "status is 'OK'")
+        #msgt(json_resp)
+        self.assertTrue(json_resp.has_key('success'), 'JSON should have key "success".  But found keys: %s' % json_resp.keys())
+        self.assertEqual(json_resp.get('success'), True, "'success' value should be 'true'")
 
-        metadata_json = json_resp.get('data', None)
-        self.assertTrue(type(metadata_json) is not None, "Check that metadata_json is a dict")
-
-        #-----------------------------------------------------------
-        msgn("(1f) Check metadata with DataverseInfoValidationForm")
-        #-----------------------------------------------------------
-        # Metadata validation form (used directly by GeoConnect and WorldMap)
-        #
-        f = DataverseInfoValidationForm(metadata_json)
-        msg('metadata valid? %s' % f.is_valid())
-        if not f.is_valid():
-            msg(f.errors)
-        self.assertTrue(f.is_valid(), "Check Metadata in validation form.  Errors:\n%s" % f.errors)
-
-        self.assertTrue(metadata_json.has_key('datafile_download_url') is True, "Check that metadata_json has 'datafile_download_url'")
-        self.assertTrue(metadata_json.has_key('datafile_filesize') is True, "Check that metadata_json has 'datafile_filesize'")
+        self.assertTrue(json_resp.has_key('data'), 'JSON should have key "data".  But found keys: %s' % json_resp.keys())
+        #expected_msg = '(The WorldMap could not verify the data.)'
+        #self.assertEqual(r.json().get('message'), expected_msg\
+        #            , 'Should receive message: "%s".  Received: %s' % (expected_msg, r.text))
 
         #-----------------------------------------------------------
-        msgt("(2) Retrieve file")
+        msgn("(1k) Examine JSON from upload")
         #-----------------------------------------------------------
-        msgn("(2a) Try without token--should be unauthorized")
-        #-----------------------------------------------------------
-        download_api_url = metadata_json['datafile_download_url']
-        msg('download_api_url: %s' % download_api_url)
-        try:
-            r = requests.get(download_api_url)
-        except requests.exceptions.ConnectionError as e:
-            msgx('Connection error: %s' % e.message)
-        except:
-            msgx("Unexpected error: %s" % sys.exc_info()[0])
+        map_layer_metadata_data = json_resp.get('data')
+        #map_layer_metadata_data.pop('attribute_info')
+        f3_dataverse_info = MapLayerMetadataValidationForm(map_layer_metadata_data)
+        
+        self.assertTrue(f3_dataverse_info.is_valid()\
+                , "Invalid check of form ShapefileImportDataForm.  Found errors: %s" % f3_dataverse_info.errors )
+
+
+
+
+        return
         msg(r.status_code)
-        self.assertEqual(r.status_code, 401, "API call should be forbidden--not token")
-
-        #-----------------------------------------------------------
-        msgn("(2b) Try with bad token, not WorldMap token length--should be forbidden.")
-        #-----------------------------------------------------------
-        random_non_worldmap_token = self.get_random_token(36)
-        download_api_url = '%s?key=%s' % (metadata_json['datafile_download_url'], random_non_worldmap_token)
-        msg('download_api_url: %s' % download_api_url)
-        try:
-            r = requests.get(download_api_url)
-        except requests.exceptions.ConnectionError as e:
-            msgx('Connection error: %s' % e.message)
-        except:
-            msgx("Unexpected error: %s" % sys.exc_info()[0])
-        msg(r.status_code)
-        self.assertEqual(r.status_code, 403, "API call should be forbidden--not token")
-
-        #-----------------------------------------------------------
-        msgn("(2c) Try with bad token, WorldMap token length, but random")
-        #-----------------------------------------------------------
-        random_worldmap_token = self.get_random_token()
-        download_api_url = '%s?key=%s' % (metadata_json['datafile_download_url'], random_worldmap_token)
-        msg('download_api_url: %s' % download_api_url)
-        try:
-            r = requests.get(download_api_url)
-        except requests.exceptions.ConnectionError as e:
-            msgx('Connection error: %s' % e.message)
-        except:
-            msgx("Unexpected error: %s" % sys.exc_info()[0])
-        msg(r.status_code)
-        self.assertEqual(r.status_code, 403, "API call should be forbidden--not token")
-
-
-        #-----------------------------------------------------------
-        msgn("(2d) Legit request with real token (takes a couple of seconds to get file)")
-        #-----------------------------------------------------------
-        download_api_url = '%s?key=%s' % (metadata_json['datafile_download_url'], WORLDMAP_TOKEN_VALUE)
-        msg('download_api_url: %s' % download_api_url)
-        try:
-            r = requests.get(download_api_url)
-        except requests.exceptions.ConnectionError as e:
-            msgx('Connection error: %s' % e.message)
-        except:
-            msgx("Unexpected error: %s" % sys.exc_info()[0])
-
-        msg(r.status_code)
-        msg('downloaded file size: %s' % len(r.text))
-        msg('expected file size: %s' % metadata_json['datafile_filesize'])
-    
-        self.assertEqual(r.status_code, 200, "API call successful to file download")
-        self.assertEqual(metadata_json['datafile_filesize'], len(r.text), "Actual file size matches size in metadata")
+        msg(r.text)
         
         
-
-    def download_file(self, url):
-        local_filename = url.split('/')[-1]
-        # NOTE the stream=True parameter
-        r = requests.get(url, stream=True)
-        with open(local_filename, 'wb') as f:
-            for chunk in r.iter_content(chunk_size=1024): 
-                if chunk: # filter out keep-alive new chunks
-                    f.write(chunk)
-                    f.flush()
-        return local_filename
-        
-    '''
-
-
-
 def get_suite():
     suite = unittest.TestSuite()
     
