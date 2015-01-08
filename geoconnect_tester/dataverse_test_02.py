@@ -37,7 +37,7 @@ DATAVERSE_SERVER =  load_settings_dict('settings.json')['dataverse_url']
 #DATAVERSE_SERVER = 'http://127.0.0.1:8080'  #'http://localhost:8080'
 #DATAVERSE_SERVER = 'https://dvn-build.hmdc.harvard.edu'  #'http://localhost:8080'
 
-class WorldMapBaseTest(unittest.TestCase):
+class DataverseMapDataBaseTest(unittest.TestCase):
 
     def setUp(self):
         global GEOCONNECT_TOKEN_VALUE_NAME, GEOCONNECT_TOKEN_VALUE, DATAVERSE_SERVER
@@ -45,6 +45,23 @@ class WorldMapBaseTest(unittest.TestCase):
         self.wm_token_value = GEOCONNECT_TOKEN_VALUE
         self.dataverse_server = DATAVERSE_SERVER
     
+        #http://107.22.231.227/data/geonode:subway_lines_2_38p
+        """
+        layer_name = 'subway_lines_2_38p'
+        self.metadata_base_params = { 'worldmap_username' : 'worldmap_user'\
+                , 'layer_name' : layer_name
+                , 'layer_link' : \
+                        'https://107.22.231.227/data/geonode:%s' % layer_name\
+                , 'embed_map_link' :  \
+                        'https://107.22.231.227/maps/embed/?layer=geonode:%s' % layer_name\
+                #, 'datafile_id' : 99\
+                , 'map_image_link' : 'https://107.22.231.227/download/wms/161/png?layers=geonode%3Asubway_lines_2_38p&width=626&bbox=-71.2530149333%2C42.2074969314%2C-70.9910217344%2C42.437486977&service=WMS&format=image%2Fpng&srs=EPSG%3A4326&request=GetMap&height=550'
+                , 'llbbox' : '-71.2530149333,42.2074969314,-70.9910217344,42.437486977'
+                , 'attribute_info' : '{ "blah" : "blah-to-meet-reqs"}'
+                , 'download_links' : ''\
+                , 'dv_session_token' : GEOCONNECT_TOKEN_VALUE\
+            }
+        """
         layer_name = 'power_plants_enipedia_jan_2014_kvg'
         self.metadata_base_params = { 'worldmap_username' : 'worldmap_user'\
                 , 'layer_name' : layer_name
@@ -52,13 +69,16 @@ class WorldMapBaseTest(unittest.TestCase):
                         'https://worldmap.harvard.edu/data/geonode:%s' % layer_name\
                 , 'embed_map_link' :  \
                         'https://worldmap.harvard.edu/maps/embed/?layer=geonode:%s' % layer_name\
-                #, 'datafile_id' : 99\
+                #, 'embed_map_link' :  \
+                #        'https://107.22.231.227/maps/embed/?layer=geonode:subway_lines_2_38p'\
                 , 'map_image_link' : 'http://worldmap.harvard.edu/download/wms/14708/png?layers=geonode:power_plants_enipedia_jan_2014_kvg&width=948&bbox=76.04800165,18.31860358,132.0322222,50.78441&service=WMS&format=image/png&srs=EPSG:4326&request=GetMap&height=550'
-                , 'llbbox' : '76.04800165,18.31860358,132.0322222,50.78441'
+                #, 'llbbox' : '76.04800165,18.31860358,132.0322222,50.78441'
+                , 'llbbox' : '-71.25301493328648,42.207496931441305,-70.99102173442837,42.437486977030176'
                 , 'attribute_info' : '{ "blah" : "blah-to-meet-reqs"}'
                 , 'download_links' : ''\
                 , 'dv_session_token' : GEOCONNECT_TOKEN_VALUE\
             }
+        
         '''
 http://worldmap.harvard.edu/download/wms/14708/png?layers=geonode:power_plants_enipedia_jan_2014_kvg&width=948&bbox=76.04800165,18.31860358,132.0322222,50.78441&service=WMS&format=image/png&srs=EPSG:4326&request=GetMap&height=550
 <gmd:westBoundLongitude>76.04800165</gco:Decimal></gmd:westBoundLongitude>
@@ -76,7 +96,7 @@ http://worldmap.harvard.edu/download/wms/14708/png?layers=geonode:power_plants_e
     def tearDown(self):
         self.wmToken = None
 
-class RetrieveFileMetadataTestCase(WorldMapBaseTest):
+class RetrieveFileMetadataTestCase(DataverseMapDataBaseTest):
 
     def get_random_token(self, token_length=64):
         return ''.join(random.SystemRandom().choice(string.uppercase + string.digits) for _ in xrange(token_length))
@@ -424,10 +444,10 @@ class RetrieveFileMetadataTestCase(WorldMapBaseTest):
 def get_suite():
     suite = unittest.TestSuite()
     
-    suite.addTest(RetrieveFileMetadataTestCase('run_test01_datafile_metadata'))
-    suite.addTest(RetrieveFileMetadataTestCase('run_test_02_map_metadata_bad_updates'))
+    #suite.addTest(RetrieveFileMetadataTestCase('run_test01_datafile_metadata'))
+    #suite.addTest(RetrieveFileMetadataTestCase('run_test_02_map_metadata_bad_updates'))
     suite.addTest(RetrieveFileMetadataTestCase('run_test_03_map_metadata_good_update'))
-    suite.addTest(RetrieveFileMetadataTestCase('run_test_04_map_metadata_delete'))
+    #suite.addTest(RetrieveFileMetadataTestCase('run_test_04_map_metadata_delete'))
 
     # Deletes token
     #suite.addTest(RetrieveFileMetadataTestCase('run_test_05_delete_token'))

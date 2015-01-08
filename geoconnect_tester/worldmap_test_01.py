@@ -12,6 +12,7 @@ import requests
 import random
 import string
 from os.path import abspath, dirname, isfile, join, isdir
+from settings_helper import load_settings_dict
 
 import unittest
 import json
@@ -21,51 +22,42 @@ settings.configure(
     DATABASE_ENGINE = 'django.db.backends.sqlite3',
     DATABASE_NAME = join('test-scratch', 'scratch.db3'),
     DATAVERSE_TOKEN_KEYNAME='GEOCONNECT_TOKEN',
+    WORLDMAP_SERVER_URL=load_settings_dict('settings.json')['WORLDMAP_SERVER'],
 )    
 #------------------
-from shared_dataverse_information.map_layer_metadata.forms import MapLayerMetadataValidationForm\
-            , GeoconnectToDataverseMapLayerMetadataValidationForm
-from shared_dataverse_information.dataverse_info.forms import DataverseInfoValidationForm
+#from shared_dataverse_information.map_layer_metadata.forms import MapLayerMetadataValidationForm\
+#            , GeoconnectToDataverseMapLayerMetadataValidationForm
+#from shared_dataverse_information.dataverse_info.forms import DataverseInfoValidationForm
+from shared_dataverse_information.worldmap_api_helper.url_helper import ADD_SHAPEFILE_API_PATH
+from shared_dataverse_information.shapefile_import.forms import ShapefileImportDataForm
+
+
 from selenium_utils.msg_util import *
 
-DATAVERSE_TOKEN_NAME = settings.DATAVERSE_TOKEN_KEYNAME
-WORLDMAP_TOKEN_VALUE = 'f32ab9cfc1e6cef6d5f6c9c7d13bb865369dd584d65fabb4b11c6593c38f16c4'
-#https://dvn-build.hmdc.harvard.edu/api/worldmap/map-it-token-only/39/1
-#DATAVERSE_SERVER = 'http://127.0.0.1:8080'  #'http://localhost:8080'
-DATAVERSE_SERVER = 'https://dvn-build.hmdc.harvard.edu'  #'http://localhost:8080'
+WORLDMAP_SERVER = load_settings_dict('settings.json')['WORLDMAP_SERVER']
+WORLMAP_TOKEN_NAME = 'geoconnect_token'
+WORLDMAP_TOKEN_VALUE = load_settings_dict('settings.json')['WORLDMAP_TOKEN_VALUE']
 
 class WorldMapBaseTest(unittest.TestCase):
 
     def setUp(self):
-        global DATAVERSE_TOKEN_NAME, WORLDMAP_TOKEN_VALUE, DATAVERSE_SERVER
-        self.wm_token_name = DATAVERSE_TOKEN_NAME
-        self.wm_token_value = WORLDMAP_TOKEN_VALUE
-        self.dataverse_server = DATAVERSE_SERVER
-    
-        layer_name = 'power_plants_enipedia_jan_2014_kvg'
-        self.metadata_base_params = { 'worldmap_username' : 'worldmap_user'\
-                , 'layer_name' : layer_name
-                , 'layer_link' : \
-                        'https://worldmap.harvard.edu/data/geonode:%s' % layer_name\
-                , 'embed_map_link' :  \
-                        'https://worldmap.harvard.edu/maps/embed/?layer=geonode:%s' % layer_name\
-                #, 'datafile_id' : 99\
-                , 'map_image_link' : 'http://worldmap.harvard.edu/download/wms/14708/png?layers=geonode:power_plants_enipedia_jan_2014_kvg&width=948&bbox=76.04800165,18.31860358,132.0322222,50.78441&service=WMS&format=image/png&srs=EPSG:4326&request=GetMap&height=550'
-                , 'llbbox' : '76.04800165,18.31860358,132.0322222,50.78441'
-                , 'attribute_info' : '{ "blah" : "blah-to-meet-reqs"}'
-                , 'download_links' : ''\
-                , 'dv_session_token' : WORLDMAP_TOKEN_VALUE\
-            }
-        '''
-http://worldmap.harvard.edu/download/wms/14708/png?layers=geonode:power_plants_enipedia_jan_2014_kvg&width=948&bbox=76.04800165,18.31860358,132.0322222,50.78441&service=WMS&format=image/png&srs=EPSG:4326&request=GetMap&height=550
-<gmd:westBoundLongitude>76.04800165</gco:Decimal></gmd:westBoundLongitude>
-<gmd:southBoundLatitude>18.31860358</gco:Decimal></gmd:southBoundLatitude>
-<gmd:eastBoundLongitude>132.0322222</gco:Decimal></gmd:eastBoundLongitude>
-<gmd:northBoundLatitude>50.78441</gco:Decimal></gmd:northBoundLatitude>
-'''    
+        
+        # Dataverse test info
+        #
+        dataverse_info_test_fixture_fname = join('input', 'dataverse_info_test_fixture.json')
+        assert isfile(dataverse_info_test_fixture_fname), "Dataverse test fixture file not found: %s" % dataverse_info_test_fixture_fname
+        self.dataverse_test_info = json.loads(open(dataverse_info_test_fixture_fname, 'r').read())
+        
+        # Shapefile test info
+        shapefile_info_test_fixture_fname = join('input', 'shapefile_info_test_fixture.json')
+        assert isfile(shapefile_info_test_fixture_fname), "Shapefile test fixture file not found: %s" % shapefile_info_test_fixture_fname
+        self.shapefile_test_info = json.loads(open(shapefile_info_test_fixture_fname, 'r').read())
+        
+        
     
     def getWorldMapTokenDict(self):
-        return { self.wm_token_name : self.wm_token_value }
+        global WORLMAP_TOKEN_NAME, WORLDMAP_TOKEN_VALUE
+        return { WORLMAP_TOKEN_NAME : WORLDMAP_TOKEN_VALUE }
         
     def runTest(self):
         msg('runTest')
@@ -73,187 +65,137 @@ http://worldmap.harvard.edu/download/wms/14708/png?layers=geonode:power_plants_e
     def tearDown(self):
         self.wmToken = None
 
-class RetrieveFileMetadataTestCase(WorldMapBaseTest):
+
+class TestWorldMapShapefileImport(WorldMapBaseTest):
 
     def get_random_token(self, token_length=64):
         return ''.join(random.SystemRandom().choice(string.uppercase + string.digits) for _ in xrange(token_length))
 
-    """
-    def run_test_05_delete_token(self):
-        api_url = '%s/api/worldmap/delete-token/' % (self.dataverse_server)
 
-        msgt("--- Delete Token ---")
-        #-----------------------------------------------------------
-        msgn("(1) Try to expire non-existent token")
-        #-----------------------------------------------------------
-        params =  { self.wm_token_name : self.get_random_token() }
-        try:
-            r = requests.post(api_url, data=json.dumps(params))
-        except requests.exceptions.ConnectionError as e:
-            msgx('Connection error: %s' % e.message)
-        except:
-            msgx("Unexpected error: %s" % sys.exc_info()[0])
-            
-        msg(r.text)
-        msg(r.status_code)
-        self.assertEqual(r.status_code, 404, "Random token, should give a 404 status")
-                
-        #-----------------------------------------------------------
-        msgn("(2) Delete token")
-        #-----------------------------------------------------------
-        params = self.getWorldMapTokenDict()
-        try:
-            r = requests.post(api_url, data=json.dumps(params))
-        except requests.exceptions.ConnectionError as e:
-            msgx('Connection error: %s' % e.message)
-        except:
-            msgx("Unexpected error: %s" % sys.exc_info()[0])
-        
-        msg(r.text)
-        msg(r.status_code)
-        self.assertEqual(r.status_code, 200, "Successfully delete token.")
-        
-        
-        #-----------------------------------------------------------
-        msgn("(3) Try to delete again, should be a 404")
-        #-----------------------------------------------------------
-        params = self.getWorldMapTokenDict()
-        try:
-            r = requests.post(api_url, data=json.dumps(params))
-        except requests.exceptions.ConnectionError as e:
-            msgx('Connection error: %s' % e.message)
-        except:
-            msgx("Unexpected error: %s" % sys.exc_info()[0])
-        
-        msg(r.status_code)
-        self.assertEqual(r.status_code, 404, "Token already deleted. Should give a 404 status")
-
-
-    def run_test_02_map_metadata_bad_updates(self):
-        
-        #-----------------------------------------------------------
-        msgt("--- Test Update Map Metadata (BAD PARAMS) ---")
-        #-----------------------------------------------------------
-        api_url = '%s/api/worldmap/update-layer-metadata' % (self.dataverse_server)
-        
-        #-----------------------------------------------------------
-        msgn("(1a) Validate metadata params")
-        #-----------------------------------------------------------
-        params = self.metadata_base_params.copy()
-        f = GeoconnectToDataverseMapLayerMetadataValidationForm(params)
-        
-        if not f.is_valid():
-            msg(f.errors.keys())
-            msg(f.errors.values())
-            msgt('form errors: %s' % f.errors)
-
-        self.assertEqual(f.is_valid(), True, "Validate map layer metadata parameters")
-
-        #-----------------------------------------------------------
-        msgn("(1b) Bad token - attempt update with bad token")
-        #-----------------------------------------------------------
-        bad_token = 'BAD-00dfa7597aa5361bdb1485842073e3b2505636af1c3ee7ada04a2b179bef'
-        formatted_params = f.format_data_for_dataverse_api(bad_token)
-        msgt('formatted params: %s' % formatted_params)
-        msg('api_url: %s' % api_url)
-        try:
-            r = requests.post(api_url, data=json.dumps(formatted_params))
-        except requests.exceptions.ConnectionError as e:
-            msgx('Connection error: %s' % e.message)
-        except:
-            msgx("Unexpected error: %s" % sys.exc_info()[0])
-        
-        msg(r.text)
-        msg(r.status_code)
-        self.assertEqual(r.status_code, 401, "Bad token is rejected")
-        
-        #-----------------------------------------------------------
-        msgn("(1c) No token - attempt update with bad token")
-        #-----------------------------------------------------------
-        params = self.metadata_base_params.copy()
-        params.pop('dv_session_token')
-        f = GeoconnectToDataverseMapLayerMetadataValidationForm(params)
-        self.assertEqual(f.is_valid(), True, "Validate fresh metadata")
-        self.assertRaises(ValueError, f.format_data_for_dataverse_api)
-    
-
-    def run_test_03_map_metadata_good_update(self):
-        
-        #-----------------------------------------------------------
-        msgt("--- Test Update Map Metadata (GOOD PARAMS) ---")
-        #-----------------------------------------------------------
-        api_url = '%s/api/worldmap/update-layer-metadata' % (self.dataverse_server)
-        
-        #-----------------------------------------------------------
-        msgn("(1) Good update - Send metadata to the dataverese")
-        #-----------------------------------------------------------
-        msg('api_url: %s' % api_url)
-        # form contains 'good token', from top of page
-        #
-        params = self.metadata_base_params.copy()
-        f = GeoconnectToDataverseMapLayerMetadataValidationForm(params)
-        self.assertEqual(f.is_valid(), True, "Validate fresh metadata:\n%s" % f.errors)
-    
-        formatted_params = f.format_data_for_dataverse_api()
-        
-        try:
-            r = requests.post(api_url, data=json.dumps(formatted_params))
-        except requests.exceptions.ConnectionError as e:
-            msgx('Connection error: %s' % e.message)
-        except:
-            msgx("Unexpected error: %s" % sys.exc_info()[0])
-            
-        msg(r.text)
-        msg(r.status_code)
-        self.assertEqual(r.status_code, 200, "Updated layer metadata")
-        self.assertEqual(r.json().has_key('status'), True, "Check for key 'status' in returned message")
-        self.assertEqual(r.json()['status'], "OK", 'Check that  {"status":"OK"..} in returned message')
-
-
-
-    def run_test_04_map_metadata_delete(self):
-
-         #-----------------------------------------------------------
-         msgt("--- Test Update Map Metadata (DELETE) ---")
-         #-----------------------------------------------------------
-         msg('FIRST: add legit metadata')
-         self.run_test_03_map_metadata_good_update()
-         
-         api_url = '%s/api/worldmap/delete-layer-metadata' % (self.dataverse_server)
-         
-         #-----------------------------------------------------------
-         msgn("(1) Delete map metadata from dataverese")
-         #-----------------------------------------------------------
-         msg('api_url: %s' % api_url)
-         # form contains 'good token', from top of page
-         #
-         params = self.getWorldMapTokenDict()
-         try:
-             r = requests.post(api_url, data=json.dumps(params))
-         except requests.exceptions.ConnectionError as e:
-             msgx('Connection error: %s' % e.message)
-         except:
-             msgx("Unexpected error: %s" % sys.exc_info()[0])
-
-         msg(r.text)
-         msg(r.status_code)
-         self.assertEqual(r.status_code, 200, "Map layer metadata deleted")
-         self.assertEqual(r.json().has_key('status'), True, "Check for key 'status' in returned message")
-         self.assertEqual(r.json()['status'], "OK", 'Check that  {"status":"OK"..} in returned message')
-
-   """
-   
     def run_test01_add_shapefile(self):
         
         #-----------------------------------------------------------
         msgt("--- Retrieve metadata ---")
         #-----------------------------------------------------------
-        api_url = '%s/api/worldmap/datafile/' % (self.dataverse_server)
+        api_url = ADD_SHAPEFILE_API_PATH#'%s/api/worldmap/datafile/' % (self.dataverse_server)
 
         #-----------------------------------------------------------
         msgn("(1a) Try with no json params")
         #-----------------------------------------------------------
-        msg('api_url: %s' % api_url)
+        try:
+            r = requests.post(api_url)#, data=json.dumps( self.getWorldMapTokenDict() ) )
+        except requests.exceptions.ConnectionError as e:
+            msgx('Connection error: %s' % e.message)
+        except:
+            msgx("Unexpected error: %s" % sys.exc_info()[0])
+        
+        self.assertEqual(r.status_code, 401, "Should receive 401 error.  Received: %s\n%s" % (r.status_code, r.text))
+        expected_msg = 'The request must be a POST.'
+        self.assertEqual(r.json().get('message'), expected_msg\
+                , 'Should receive message: "%s".  Received: %s' % (expected_msg, r.text))
+        
+
+        #-----------------------------------------------------------
+        msgn("(1b) Try with bad token")
+        #-----------------------------------------------------------
+        
+        try:
+            r = requests.post(api_url, data=json.dumps( { WORLMAP_TOKEN_NAME : 'bad-token ' } ))
+        except requests.exceptions.ConnectionError as e:
+            msgx('Connection error: %s' % e.message)
+        except:
+            msgx("Unexpected error: %s" % sys.exc_info()[0])
+
+        self.assertEqual(r.status_code, 401, "Should receive 401 error.  Received: %s\n%s" % (r.status_code, r.text))
+        expected_msg = 'Authentication failed.'
+        self.assertEqual(r.json().get('message'), expected_msg\
+                , 'Should receive message: "%s".  Received: %s' % (expected_msg, r.text))
+
+        #-----------------------------------------------------------
+        msgn("(1c) Try with token but no payload")
+        #-----------------------------------------------------------
+        try:
+            r = requests.post(api_url, data=self.getWorldMapTokenDict() )
+        except requests.exceptions.ConnectionError as e:
+            msgx('Connection error: %s' % e.message)
+        except:
+            msgx("Unexpected error: %s" % sys.exc_info()[0])
+
+        self.assertEqual(r.status_code, 200, "Should receive 200 error.  Received: %s\n%s" % (r.status_code, r.text))
+        expected_msg = "Incorrect params for ShapefileImportDataForm: <br /><ul class=\"errorlist\"><li>dv_user_email<ul class=\"errorlist\"><li>This field is required.</li></ul></li><li>abstract<ul class=\"errorlist\"><li>This field is required.</li></ul></li><li>shapefile_name<ul class=\"errorlist\"><li>This field is required.</li></ul></li><li>title<ul class=\"errorlist\"><li>This field is required.</li></ul></li></ul>"
+        self.assertEqual(r.json().get('message'), expected_msg\
+                , 'Should receive message: "%s".  Received: %s' % (expected_msg, r.text))
+        
+        
+        #-----------------------------------------------------------
+        msgn("(1d) Test data with missing 'title' against ShapefileImportDataForm")
+        #-----------------------------------------------------------
+        # Pop 'title' from shapefile info
+        #
+        test_shapefile_info = self.shapefile_test_info.copy()
+        test_shapefile_info.pop('title')
+        
+        # Form should mark data as invalid
+        #
+        f1_shapefile_info = ShapefileImportDataForm(test_shapefile_info)
+        self.assertEqual(f1_shapefile_info.is_valid(), False, "Data should be invalid")
+        self.assertTrue(len(f1_shapefile_info.errors.values()) == 1, "Form should have one error")
+        self.assertTrue(f1_shapefile_info.errors.has_key('title'), "Error keys should contain 'title'")
+        self.assertEqual(f1_shapefile_info.errors.values(), [[u'This field is required.']]\
+                        , "Error for 'title' field should be: [[u'This field is required.']]")
+
+
+        #-----------------------------------------------------------
+        msgn("(1e) Test good data against ShapefileImportDataForm")
+        #-----------------------------------------------------------
+        # Pop 'title' from shapefile info
+        #
+        test_shapefile_info = self.shapefile_test_info.copy()
+
+        f2_shapefile_info = ShapefileImportDataForm(test_shapefile_info)
+        self.assertTrue(f2_shapefile_info.is_valid(), "Data should be valid")
+
+        return
+        #-----------------------------------------------------------
+        msgn("(1f) Test partial data upload against WorldMap")
+        #-----------------------------------------------------------
+        # Get basic shapefile info (missing dataverse info)
+        test_shapefile_info = self.shapefile_test_info.copy()
+
+        # add tokend
+        test_shapefile_info.update(self.getWorldMapTokenDict())
+        msgt(test_shapefile_info)
+        msg('api url: %s' % api_url)
+        try:
+            r = requests.post(api_url, data=test_shapefile_info)#json.dumps(test_shapefile_info) )
+        except requests.exceptions.ConnectionError as e:
+            msgx('Connection error: %s' % e.message)
+        except:
+            msgx("Unexpected error: %s" % sys.exc_info()[0])
+    
+        msg(r.status_code)
+        msg(r.text)
+
+        return
+        msg(dir(f1_shapefile_info.errors))
+        msg(f1_shapefile_info.errors.values())
+        #"Validation failed with ShapefileImportDataForm\nErrors: %s" % f1_shapefile_info.errors.values())
+        return
+        msg(r.status_code)
+        msg(r.text)
+        return
+        msgt('dataverse_test_info')
+        msg(self.dataverse_test_info)
+        msgt('shapefile_test_info')
+        msg(self.shapefile_test_info)
+        msgt('api_url: %s' % api_url)
+        
+        form_shapefile_info = ShapefileImportDataForm(self.shapefile_test_info)
+        self.assertTrue(form_shapefile_info.is_valid(), "Validation failed with ShapefileImportDataForm\nErrors: %s" % form_shapefile_info.errors)
+
+        #msg( form_shapefile_info.is_valid())
+        return
+        '''
         try:
             r = requests.post(api_url)
         except requests.exceptions.ConnectionError as e:
@@ -414,14 +356,14 @@ class RetrieveFileMetadataTestCase(WorldMapBaseTest):
                     f.flush()
         return local_filename
         
-    
+    '''
 
 
 
 def get_suite():
     suite = unittest.TestSuite()
     
-    suite.addTest(RetrieveFileMetadataTestCase('run_test01_add_shapefile'))
+    suite.addTest(TestWorldMapShapefileImport('run_test01_add_shapefile'))
     
     # Deletes token
     #suite.addTest(RetrieveFileMetadataTestCase('run_test_05_delete_token'))
