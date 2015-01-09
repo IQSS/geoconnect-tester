@@ -87,7 +87,7 @@ http://worldmap.harvard.edu/download/wms/14708/png?layers=geonode:power_plants_e
 <gmd:northBoundLatitude>50.78441</gco:Decimal></gmd:northBoundLatitude>
 '''    
     
-    def getWorldMapTokenDict(self):
+    def get_worldmap_token_dict(self):
         return { self.wm_token_name : self.wm_token_value }
         
     def runTest(self):
@@ -124,7 +124,7 @@ class RetrieveFileMetadataTestCase(DataverseMapDataBaseTest):
         #-----------------------------------------------------------
         msgn("(2) Delete token")
         #-----------------------------------------------------------
-        params = self.getWorldMapTokenDict()
+        params = self.get_worldmap_token_dict()
         try:
             r = requests.post(api_url, data=json.dumps(params))
         except requests.exceptions.ConnectionError as e:
@@ -140,7 +140,7 @@ class RetrieveFileMetadataTestCase(DataverseMapDataBaseTest):
         #-----------------------------------------------------------
         msgn("(3) Try to delete again, should be a 404")
         #-----------------------------------------------------------
-        params = self.getWorldMapTokenDict()
+        params = self.get_worldmap_token_dict()
         try:
             r = requests.post(api_url, data=json.dumps(params))
         except requests.exceptions.ConnectionError as e:
@@ -250,7 +250,7 @@ class RetrieveFileMetadataTestCase(DataverseMapDataBaseTest):
          msg('api_url: %s' % api_url)
          # form contains 'good token', from top of page
          #
-         params = self.getWorldMapTokenDict()
+         params = self.get_worldmap_token_dict()
          try:
              r = requests.post(api_url, data=json.dumps(params))
          except requests.exceptions.ConnectionError as e:
@@ -321,7 +321,7 @@ class RetrieveFileMetadataTestCase(DataverseMapDataBaseTest):
         #-----------------------------------------------------------
         msgn("(1d) Retrieve metadata")
         #-----------------------------------------------------------
-        params = self.getWorldMapTokenDict()
+        params = self.get_worldmap_token_dict()
         
         msg('api_url: %s' % api_url)     
         msg('params: %s' % params)     

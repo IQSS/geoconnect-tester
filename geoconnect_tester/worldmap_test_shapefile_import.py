@@ -1,83 +1,36 @@
 """
-Quick test, need to use Dataverse native+sword API to 
-    (1) create dataverse, publish dataverse
-    (2) create dataset with file, publish dataset
-    (3) retrieve 'map data' token for the file
-    (4) run the API tests on it
-    
-current (1) to (3) are in 'bari_setup.py' via selenium
-(native dataverse API does not have file upload)
+Run tests for the WorldMap Shapefile import API
 """
 import requests
-import random
-import string
 from os.path import abspath, dirname, isfile, join, isdir
 from settings_helper import load_settings_dict
 
 import unittest
 import json
-#------------------
-from django.conf import settings
-settings.configure(
-    DATABASE_ENGINE = 'django.db.backends.sqlite3',
-    DATABASE_NAME = join('test-scratch', 'scratch.db3'),
-    DATAVERSE_TOKEN_KEYNAME='GEOCONNECT_TOKEN',
-    WORLDMAP_SERVER_URL=load_settings_dict()['WORLDMAP_SERVER'],
-)    
-#------------------
-#from shared_dataverse_information.map_layer_metadata.forms import MapLayerMetadataValidationForm\
-#            , GeoconnectToDataverseMapLayerMetadataValidationForm
-#from shared_dataverse_information.dataverse_info.forms import DataverseInfoValidationForm
-from shared_dataverse_information.worldmap_api_helper.url_helper import ADD_SHAPEFILE_API_PATH
-from shared_dataverse_information.shapefile_import.forms import ShapefileImportDataForm
 
+#   Base test class
+#
+from worldmap_base_test import WorldMapBaseTest
+
+# API path(s) are here
+#
+from shared_dataverse_information.worldmap_api_helper.url_helper import ADD_SHAPEFILE_API_PATH
+
+# Validation forms from https://github.com/IQSS/shared-dataverse-information
+#
+from shared_dataverse_information.shapefile_import.forms import ShapefileImportDataForm
 from shared_dataverse_information.map_layer_metadata.forms import MapLayerMetadataValidationForm
 
-
 from selenium_utils.msg_util import *
-
-WORLDMAP_SERVER = load_settings_dict()['WORLDMAP_SERVER']
-WORLMAP_TOKEN_NAME = 'geoconnect_token'
-WORLDMAP_TOKEN_VALUE = load_settings_dict()['WORLDMAP_TOKEN_VALUE']
-
-class WorldMapBaseTest(unittest.TestCase):
-
-    def setUp(self):
-        
-        # Dataverse test info
-        #
-        dataverse_info_test_fixture_fname = join('input', 'dataverse_info_test_fixture.json')
-        assert isfile(dataverse_info_test_fixture_fname), "Dataverse test fixture file not found: %s" % dataverse_info_test_fixture_fname
-        self.dataverse_test_info = json.loads(open(dataverse_info_test_fixture_fname, 'r').read())
-        
-        # Shapefile test info
-        shapefile_info_test_fixture_fname = join('input', 'shapefile_info_test_fixture.json')
-        assert isfile(shapefile_info_test_fixture_fname), "Shapefile test fixture file not found: %s" % shapefile_info_test_fixture_fname
-        self.shapefile_test_info = json.loads(open(shapefile_info_test_fixture_fname, 'r').read())
-        
-        self.test_shapefile_name = join('input', 'social_disorder_in_boston_yqh.zip')
-        assert isfile(self.test_shapefile_name), "Test shapefile not found: %s" % self.test_shapefile_name
-    
-        self.test_bad_file = join('input', 'meditation-gray-matter-rebuild.pdf')
-        assert isfile(self.test_bad_file), "Bad test file not found: %s" % self.test_bad_file
-    
-    def getWorldMapTokenDict(self):
-        global WORLMAP_TOKEN_NAME, WORLDMAP_TOKEN_VALUE
-        return { WORLMAP_TOKEN_NAME : WORLDMAP_TOKEN_VALUE }
-        
-    def runTest(self):
-        msg('runTest')
-        
-    def tearDown(self):
-        self.wmToken = None
 
 
 class TestWorldMapShapefileImport(WorldMapBaseTest):
 
-    def get_random_token(self, token_length=64):
-        return ''.join(random.SystemRandom().choice(string.uppercase + string.digits) for _ in xrange(token_length))
+    def setUp(self):
+        super(TestWorldMapShapefileImport, self).setUp()              #super().__init__(x,y)
+        msgt('........ set up 2 ................')
 
-
+    
     def run_test01_bad_shapefile_imports(self):
         
         #-----------------------------------------------------------
@@ -90,7 +43,7 @@ class TestWorldMapShapefileImport(WorldMapBaseTest):
         #-----------------------------------------------------------
         msg('api_url: %s' % api_url)
         try:
-            r = requests.post(api_url)#, data=json.dumps( self.getWorldMapTokenDict() ) )
+            r = requests.post(api_url)#, data=json.dumps( self.get_worldmap_token_dict() ) )
         except requests.exceptions.ConnectionError as e:
             msgx('Connection error: %s' % e.message)
         except:
@@ -109,8 +62,9 @@ class TestWorldMapShapefileImport(WorldMapBaseTest):
 
         #   Test WorldMap shapefile import API but use a BAD TOKEN
         #
+        #r = requests.post(api_url, data=json.dumps( self.get_worldmap_random_token_dict() ))
         try:
-            r = requests.post(api_url, data=json.dumps( { WORLMAP_TOKEN_NAME : 'bad-token ' } ))
+            r = requests.post(api_url, data=json.dumps( self.get_worldmap_random_token_dict() ))
         except requests.exceptions.ConnectionError as e:
             msgx('Connection error: %s' % e.message)
         except:
@@ -131,7 +85,7 @@ class TestWorldMapShapefileImport(WorldMapBaseTest):
         test_shapefile_info = self.shapefile_test_info.copy()
 
         # add token
-        test_shapefile_info.update(self.getWorldMapTokenDict())
+        test_shapefile_info.update(self.get_worldmap_token_dict())
 
         # add dv info
         test_shapefile_info.update(self.dataverse_test_info)
@@ -165,7 +119,7 @@ class TestWorldMapShapefileImport(WorldMapBaseTest):
         #   Test WorldMap shapefile import API but send 2 files instead of 1
         #
         try:
-            r = requests.post(api_url, data=self.getWorldMapTokenDict(), files=files )
+            r = requests.post(api_url, data=self.get_worldmap_token_dict(), files=files )
         except requests.exceptions.ConnectionError as e:
             msgx('Connection error: %s' % e.message)
         except:
@@ -189,7 +143,7 @@ class TestWorldMapShapefileImport(WorldMapBaseTest):
         #   TTest WorldMap shapefile import API with payload except file (metadata is not given)
         #
         try:
-            r = requests.post(api_url, data=self.getWorldMapTokenDict(), files=files )
+            r = requests.post(api_url, data=self.get_worldmap_token_dict(), files=files )
         except requests.exceptions.ConnectionError as e:
             msgx('Connection error: %s' % e.message)
         except:
@@ -243,7 +197,7 @@ class TestWorldMapShapefileImport(WorldMapBaseTest):
         files = {'file': open( self.test_shapefile_name, 'rb')}
 
         # add token
-        test_shapefile_info.update(self.getWorldMapTokenDict())
+        test_shapefile_info.update(self.get_worldmap_token_dict())
 
         #   Test WorldMap shapefile import API but dataverse_info is missing
         #
@@ -271,7 +225,7 @@ class TestWorldMapShapefileImport(WorldMapBaseTest):
         test_shapefile_info = self.shapefile_test_info.copy()
 
         # add token
-        test_shapefile_info.update(self.getWorldMapTokenDict())
+        test_shapefile_info.update(self.get_worldmap_token_dict())
 
         # add dv info
         test_shapefile_info.update(self.dataverse_test_info)
@@ -316,7 +270,7 @@ class TestWorldMapShapefileImport(WorldMapBaseTest):
         test_shapefile_info = self.shapefile_test_info.copy()
 
         # add token
-        test_shapefile_info.update(self.getWorldMapTokenDict())
+        test_shapefile_info.update(self.get_worldmap_token_dict())
 
         # add dv info
         test_shapefile_info.update(self.dataverse_test_info)
@@ -385,9 +339,6 @@ def get_suite():
     suite.addTest(TestWorldMapShapefileImport('run_test01_bad_shapefile_imports'))
     suite.addTest(TestWorldMapShapefileImport('run_test02_good_shapefile_import'))
 
-    # Deletes token
-    #suite.addTest(RetrieveFileMetadataTestCase('run_test_05_delete_token'))
-    
     return suite
 
 
