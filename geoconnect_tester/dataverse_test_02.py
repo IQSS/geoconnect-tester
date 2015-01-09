@@ -30,8 +30,8 @@ from shared_dataverse_information.dataverse_info.forms import DataverseInfoValid
 from selenium_utils.msg_util import *
 
 GEOCONNECT_TOKEN_VALUE_NAME = settings.DATAVERSE_TOKEN_KEYNAME
-GEOCONNECT_TOKEN_VALUE = load_settings_dict('settings.json')['GEOCONNECT_TOKEN_VALUE']
-DATAVERSE_SERVER =  load_settings_dict('settings.json')['dataverse_url']
+GEOCONNECT_TOKEN_VALUE = load_settings_dict()['GEOCONNECT_TOKEN_VALUE']
+DATAVERSE_SERVER =  load_settings_dict()['dataverse_url']
 
 #https://dvn-build.hmdc.harvard.edu/api/worldmap/map-it-token-only/39/1
 #DATAVERSE_SERVER = 'http://127.0.0.1:8080'  #'http://localhost:8080'

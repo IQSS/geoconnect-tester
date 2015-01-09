@@ -176,7 +176,7 @@ def run_user_pete(dataverse_url):
 
 
 if __name__=='__main__':
-    dataverse_url = load_settings_dict('settings.json')['dataverse_url']
+    dataverse_url = load_settings_dict()['dataverse_url']
     #'https://dvn-build.hmdc.harvard.edu/'
     #dataverse_url = 'https://shibtest.dataverse.org'
     #dataverse_url = 'http://127.0.0.1:8080'

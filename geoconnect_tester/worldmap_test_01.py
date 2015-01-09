@@ -22,7 +22,7 @@ settings.configure(
     DATABASE_ENGINE = 'django.db.backends.sqlite3',
     DATABASE_NAME = join('test-scratch', 'scratch.db3'),
     DATAVERSE_TOKEN_KEYNAME='GEOCONNECT_TOKEN',
-    WORLDMAP_SERVER_URL=load_settings_dict('settings.json')['WORLDMAP_SERVER'],
+    WORLDMAP_SERVER_URL=load_settings_dict()['WORLDMAP_SERVER'],
 )    
 #------------------
 #from shared_dataverse_information.map_layer_metadata.forms import MapLayerMetadataValidationForm\
@@ -36,9 +36,9 @@ from shared_dataverse_information.map_layer_metadata.forms import MapLayerMetada
 
 from selenium_utils.msg_util import *
 
-WORLDMAP_SERVER = load_settings_dict('settings.json')['WORLDMAP_SERVER']
+WORLDMAP_SERVER = load_settings_dict()['WORLDMAP_SERVER']
 WORLMAP_TOKEN_NAME = 'geoconnect_token'
-WORLDMAP_TOKEN_VALUE = load_settings_dict('settings.json')['WORLDMAP_TOKEN_VALUE']
+WORLDMAP_TOKEN_VALUE = load_settings_dict()['WORLDMAP_TOKEN_VALUE']
 
 class WorldMapBaseTest(unittest.TestCase):
 
@@ -78,16 +78,17 @@ class TestWorldMapShapefileImport(WorldMapBaseTest):
         return ''.join(random.SystemRandom().choice(string.uppercase + string.digits) for _ in xrange(token_length))
 
 
-    def run_test01_add_shapefile(self):
+    def run_test01_bad_shapefile_imports(self):
         
         #-----------------------------------------------------------
-        msgt("--- Retrieve metadata ---")
+        msgt("--- Shapefile imports (that should fail) ---")
         #-----------------------------------------------------------
-        api_url = ADD_SHAPEFILE_API_PATH#'%s/api/worldmap/datafile/' % (self.dataverse_server)
+        api_url = ADD_SHAPEFILE_API_PATH
 
         #-----------------------------------------------------------
-        msgn("(1a) Try with no json params")
+        msgn("(1a) Test WorldMap shapefile import API but without any payload (GET instead of POST)")
         #-----------------------------------------------------------
+        msg('api_url: %s' % api_url)
         try:
             r = requests.post(api_url)#, data=json.dumps( self.getWorldMapTokenDict() ) )
         except requests.exceptions.ConnectionError as e:
@@ -103,9 +104,11 @@ class TestWorldMapShapefileImport(WorldMapBaseTest):
                 , 'Should receive message: "%s".  Received: %s' % (expected_msg, r.text))
         
         #-----------------------------------------------------------
-        msgn("(1b) Try with bad token")
+        msgn("(1b) Test WorldMap shapefile import API but use a BAD TOKEN")
         #-----------------------------------------------------------
-        
+
+        #   Test WorldMap shapefile import API but use a BAD TOKEN
+        #
         try:
             r = requests.post(api_url, data=json.dumps( { WORLMAP_TOKEN_NAME : 'bad-token ' } ))
         except requests.exceptions.ConnectionError as e:
@@ -122,9 +125,9 @@ class TestWorldMapShapefileImport(WorldMapBaseTest):
 
 
         #-----------------------------------------------------------
-        msgn("(1c) Test data upload WITHOUT file against WorldMap")
+        msgn("(1c) Test WorldMap shapefile import API but FAIL to include a file")
         #-----------------------------------------------------------
-        # Get basic shapefile info (missing dataverse info)
+        # Get basic shapefile info
         test_shapefile_info = self.shapefile_test_info.copy()
 
         # add token
@@ -133,7 +136,8 @@ class TestWorldMapShapefileImport(WorldMapBaseTest):
         # add dv info
         test_shapefile_info.update(self.dataverse_test_info)
 
-        #msgt(test_shapefile_info)
+        #   Test WorldMap shapefile import API but FAIL to include a file
+        #
         msg('api url: %s' % api_url)
         try:
             r = requests.post(api_url\
@@ -152,12 +156,14 @@ class TestWorldMapShapefileImport(WorldMapBaseTest):
 
 
         #-----------------------------------------------------------
-        msgn("(1d) Test data upload TWO FILES against WorldMap")
+        msgn("(1d) Test WorldMap shapefile import API but send 2 files instead of 1")
         #-----------------------------------------------------------
         files = {   'file': open( self.test_shapefile_name, 'rb')\
                     , 'file1': open( self.test_shapefile_name, 'rb')\
                 }
-    
+
+        #   Test WorldMap shapefile import API but send 2 files instead of 1
+        #
         try:
             r = requests.post(api_url, data=self.getWorldMapTokenDict(), files=files )
         except requests.exceptions.ConnectionError as e:
@@ -175,11 +181,13 @@ class TestWorldMapShapefileImport(WorldMapBaseTest):
 
         
         #-----------------------------------------------------------
-        msgn("(1e) Try with token and file but no payload")
+        msgn("(1e) Test WorldMap shapefile import API with payload except file (metadata is not given)")
         #-----------------------------------------------------------
         # prep file
         files = {'file': open( self.test_shapefile_name, 'rb')}
-    
+
+        #   TTest WorldMap shapefile import API with payload except file (metadata is not given)
+        #
         try:
             r = requests.post(api_url, data=self.getWorldMapTokenDict(), files=files )
         except requests.exceptions.ConnectionError as e:
@@ -198,7 +206,7 @@ class TestWorldMapShapefileImport(WorldMapBaseTest):
 
         
         #-----------------------------------------------------------
-        msgn("(1f) Test data with missing 'title' against ShapefileImportDataForm")
+        msgn("(1f) Test ShapefileImportDataForm. Use data missing the 'title' attribute")
         #-----------------------------------------------------------
         # Pop 'title' from shapefile info
         #
@@ -216,7 +224,7 @@ class TestWorldMapShapefileImport(WorldMapBaseTest):
 
 
         #-----------------------------------------------------------
-        msgn("(1g) Test good data against ShapefileImportDataForm")
+        msgn("(1g) Test ShapefileImportDataForm. Use good data")
         #-----------------------------------------------------------
         # Pop 'title' from shapefile info
         #
@@ -226,7 +234,7 @@ class TestWorldMapShapefileImport(WorldMapBaseTest):
         self.assertTrue(f2_shapefile_info.is_valid(), "Data should be valid")
 
         #-----------------------------------------------------------
-        msgn("(1h) Test INCOMPLETE data upload against WorldMap")
+        msgn("(1h) Test WorldMap shapefile import API with INCOMPLETE data payload.")
         #-----------------------------------------------------------
         # Get basic shapefile info (missing dataverse info)
         test_shapefile_info = self.shapefile_test_info.copy()
@@ -236,7 +244,9 @@ class TestWorldMapShapefileImport(WorldMapBaseTest):
 
         # add token
         test_shapefile_info.update(self.getWorldMapTokenDict())
-        #msgt(test_shapefile_info)
+
+        #   Test WorldMap shapefile import API but dataverse_info is missing
+        #
         msg('api url: %s' % api_url)
         try:
             r = requests.post(api_url, data=test_shapefile_info, files=files)
@@ -255,9 +265,9 @@ class TestWorldMapShapefileImport(WorldMapBaseTest):
         
 
         #-----------------------------------------------------------
-        msgn("(1i) Test BAD shapefile upload against WorldMap")
+        msgn("(1i) Test WorldMap shapefile import API but file is NOT a shapefile")
         #-----------------------------------------------------------
-        # Get basic shapefile info (missing dataverse info)
+        # Get basic shapefile info
         test_shapefile_info = self.shapefile_test_info.copy()
 
         # add token
@@ -270,7 +280,9 @@ class TestWorldMapShapefileImport(WorldMapBaseTest):
         # prep file        
         files = {'file': open(self.test_bad_file, 'rb')}
         
-        #msgt(test_shapefile_info)
+
+        #   Test WorldMap shapefile import API but file is NOT a shapefile
+        #
         msg('api url: %s' % api_url)
         try:
             r = requests.post(api_url\
@@ -290,11 +302,17 @@ class TestWorldMapShapefileImport(WorldMapBaseTest):
                         % (expected_err, r.text)\
                     )
     
-        
+    def run_test02_good_shapefile_import(self):
+
         #-----------------------------------------------------------
-        msgn("(1j) Good: Test shapefile upload against WorldMap")
+        msgt("--- Shapefile import (good) ---")
         #-----------------------------------------------------------
-        # Get basic shapefile info (missing dataverse info)
+        api_url = ADD_SHAPEFILE_API_PATH
+
+        #-----------------------------------------------------------
+        msgn("(2a) Test WorldMap shapefile import API -- with GOOD data/file")
+        #-----------------------------------------------------------
+        # Get basic shapefile info
         test_shapefile_info = self.shapefile_test_info.copy()
 
         # add token
@@ -306,7 +324,8 @@ class TestWorldMapShapefileImport(WorldMapBaseTest):
         # prep file
         files = {'file': open( self.test_shapefile_name, 'rb')}
         
-        #msgt(test_shapefile_info)
+        #   Test WorldMap shapefile import API
+        #
         msg('api url: %s' % api_url)
         try:
             r = requests.post(api_url\
@@ -320,29 +339,39 @@ class TestWorldMapShapefileImport(WorldMapBaseTest):
         msg(r.status_code)
         msg(r.text)
 
+        #   Expect HTTP 200 - success
+        #
         self.assertEqual(r.status_code, 200, "Should receive 200 message.  Received: %s\n%s" % (r.status_code, r.text))
 
-        json_resp = r.json()
-        #msgt(json_resp)
+        #-----------------------------------------------------------
+        msgn("(2b) Examine JSON result from WorldMap shapefile import API")
+        #-----------------------------------------------------------
+        try:
+            json_resp = r.json()
+        except:
+            self.assertTrue(False, "Failed to convert response to JSON. Received: %s" % r.text)
+
+        #   Expect 'success' key to be True
+        #
         self.assertTrue(json_resp.has_key('success'), 'JSON should have key "success".  But found keys: %s' % json_resp.keys())
         self.assertEqual(json_resp.get('success'), True, "'success' value should be 'true'")
 
+        #   Expect data key in JSON
+        #
         self.assertTrue(json_resp.has_key('data'), 'JSON should have key "data".  But found keys: %s' % json_resp.keys())
-        #expected_msg = '(The WorldMap could not verify the data.)'
-        #self.assertEqual(r.json().get('message'), expected_msg\
-        #            , 'Should receive message: "%s".  Received: %s' % (expected_msg, r.text))
 
         #-----------------------------------------------------------
-        msgn("(1k) Examine JSON from upload")
+        msgn("(2c) Use MapLayerMetadataValidationForm to validate JSON result from WorldMap shapefile import API")
         #-----------------------------------------------------------
+        #   Validate JSON data using MapLayerMetadataValidationForm
+        #
         map_layer_metadata_data = json_resp.get('data')
-        #map_layer_metadata_data.pop('attribute_info')
         f3_dataverse_info = MapLayerMetadataValidationForm(map_layer_metadata_data)
         
         self.assertTrue(f3_dataverse_info.is_valid()\
-                , "Invalid check of form ShapefileImportDataForm.  Found errors: %s" % f3_dataverse_info.errors )
-
-
+                        , "Failed to validate JSON data using MapLayerMetadataValidationForm.  Found errors: %s"\
+                        % f3_dataverse_info.errors \
+                )
 
 
         return
@@ -353,8 +382,9 @@ class TestWorldMapShapefileImport(WorldMapBaseTest):
 def get_suite():
     suite = unittest.TestSuite()
     
-    suite.addTest(TestWorldMapShapefileImport('run_test01_add_shapefile'))
-    
+    suite.addTest(TestWorldMapShapefileImport('run_test01_bad_shapefile_imports'))
+    suite.addTest(TestWorldMapShapefileImport('run_test02_good_shapefile_import'))
+
     # Deletes token
     #suite.addTest(RetrieveFileMetadataTestCase('run_test_05_delete_token'))
     
