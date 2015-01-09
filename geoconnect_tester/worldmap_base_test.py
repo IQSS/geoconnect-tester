@@ -2,7 +2,8 @@
 Base test class for testing the WorldMap API used by GeoConnect
 
 """
-from os.path import isfile, join
+import os
+from os.path import isfile, join, normpath
 from settings_helper import load_settings_dict
 
 import unittest
@@ -11,12 +12,22 @@ import string
 import random
 
 #------------------
+from django.core.management import call_command
 from django.conf import settings
 settings.configure(
-    DATABASE_ENGINE = 'django.db.backends.sqlite3',
-    DATABASE_NAME = join('test-scratch', 'scratch.db3'),
+    DATABASES =  {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': normpath(join('test-scratch', 'scratch.db3')),
+            'USER': '',
+            'PASSWORD': '',
+            'HOST': '',
+            'PORT': '',
+        },
+    },
     DATAVERSE_TOKEN_KEYNAME='GEOCONNECT_TOKEN',
-    WORLDMAP_SERVER_URL=load_settings_dict()['WORLDMAP_SERVER']
+    WORLDMAP_SERVER_URL=load_settings_dict()['WORLDMAP_SERVER'],
+    INSTALLED_APPS = ('shared_dataverse_information.layer_classification',)
 )    
 #------------------
 
@@ -29,6 +40,11 @@ class WorldMapBaseTest(unittest.TestCase):
 
     def setUp(self):
         msgt('........ set up 1 ................')
+        
+        # Create database
+        #
+        call_command('syncdb', interactive = False)
+        
         # Verify/load dataverse test info
         #
         dataverse_info_test_fixture_fname = join('input', 'dataverse_info_test_fixture.json')
@@ -73,4 +89,4 @@ class WorldMapBaseTest(unittest.TestCase):
         
 
     def tearDown(self):
-        pass
+        os.remove(normpath(join('test-scratch', 'scratch.db3')))
