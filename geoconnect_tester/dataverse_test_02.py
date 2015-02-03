@@ -361,7 +361,8 @@ class RetrieveFileMetadataTestCase(DataverseMapDataBaseTest):
         #-----------------------------------------------------------
         msgt("(2) Retrieve file")
         #-----------------------------------------------------------
-        msgn("(2a) Try without token--should be unauthorized")
+        #msgn("(2a) Try without token--should be unauthorized")
+        msgn("(2a) Try without token--should be ok b/c dataset is published")
         #-----------------------------------------------------------
         download_api_url = metadata_json['datafile_download_url']
         msg('download_api_url: %s' % download_api_url)
@@ -372,8 +373,10 @@ class RetrieveFileMetadataTestCase(DataverseMapDataBaseTest):
         except:
             msgx("Unexpected error: %s" % sys.exc_info()[0])
         msg(r.status_code)
-        self.assertEqual(r.status_code, 401, "API call should be forbidden--not token")
+        #self.assertEqual(r.status_code, 401, "API call should be forbidden--no token")
+        self.assertEqual(r.status_code, 200, "API call should be ok b/c dataset is published")
 
+        """
         #-----------------------------------------------------------
         msgn("(2b) Try with bad token, not WorldMap token length--should be forbidden.")
         #-----------------------------------------------------------
@@ -387,8 +390,8 @@ class RetrieveFileMetadataTestCase(DataverseMapDataBaseTest):
         except:
             msgx("Unexpected error: %s" % sys.exc_info()[0])
         msg(r.status_code)
-        self.assertEqual(r.status_code, 403, "API call should be forbidden--not token")
-
+        self.assertEqual(r.status_code, 403, "API call should be forbidden--bad token")
+        
         #-----------------------------------------------------------
         msgn("(2c) Try with bad token, WorldMap token length, but random")
         #-----------------------------------------------------------
@@ -402,8 +405,8 @@ class RetrieveFileMetadataTestCase(DataverseMapDataBaseTest):
         except:
             msgx("Unexpected error: %s" % sys.exc_info()[0])
         msg(r.status_code)
-        self.assertEqual(r.status_code, 403, "API call should be forbidden--not token")
-
+        self.assertEqual(r.status_code, 403, "API call should be forbidden--no token")
+        """
 
         #-----------------------------------------------------------
         msgn("(2d) Legit request with real token (takes a couple of seconds to get file)")
@@ -444,9 +447,9 @@ class RetrieveFileMetadataTestCase(DataverseMapDataBaseTest):
 def get_suite():
     suite = unittest.TestSuite()
     
-    #suite.addTest(RetrieveFileMetadataTestCase('run_test01_datafile_metadata'))
+    suite.addTest(RetrieveFileMetadataTestCase('run_test01_datafile_metadata'))
     #suite.addTest(RetrieveFileMetadataTestCase('run_test_02_map_metadata_bad_updates'))
-    suite.addTest(RetrieveFileMetadataTestCase('run_test_03_map_metadata_good_update'))
+    #suite.addTest(RetrieveFileMetadataTestCase('run_test_03_map_metadata_good_update'))
     #suite.addTest(RetrieveFileMetadataTestCase('run_test_04_map_metadata_delete'))
 
     # Deletes token

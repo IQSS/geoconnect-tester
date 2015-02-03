@@ -43,7 +43,7 @@ class TestWorldMapShapefileImport(WorldMapBaseTest):
         #-----------------------------------------------------------
         msg('api_url: %s' % api_url)
         try:
-            r = requests.post(api_url)#, data=json.dumps( self.get_worldmap_token_dict() ) )
+            r = requests.post(api_url)
         except requests.exceptions.ConnectionError as e:
             msgx('Connection error: %s' % e.message)
         except:
@@ -56,6 +56,8 @@ class TestWorldMapShapefileImport(WorldMapBaseTest):
         self.assertEqual(r.json().get('message'), expected_msg\
                 , 'Should receive message: "%s".  Received: %s' % (expected_msg, r.text))
         
+        '''
+        -> Token now part of form
         #-----------------------------------------------------------
         msgn("(1b) Test WorldMap shapefile import API but use a BAD TOKEN")
         #-----------------------------------------------------------
@@ -76,16 +78,15 @@ class TestWorldMapShapefileImport(WorldMapBaseTest):
         expected_msg = 'Authentication failed.'
         self.assertEqual(r.json().get('message'), expected_msg\
                 , 'Should receive message: "%s".  Received: %s' % (expected_msg, r.text))
-
+        '''
 
         #-----------------------------------------------------------
         msgn("(1c) Test WorldMap shapefile import API but FAIL to include a file")
         #-----------------------------------------------------------
         # Get basic shapefile info
-        test_shapefile_info = self.shapefile_test_info.copy()
-
-        # add token
-        test_shapefile_info.update(self.get_worldmap_token_dict())
+        shapefile_api_form = ShapefileImportDataForm(self.shapefile_test_info)
+        self.assertTrue(shapefile_api_form.is_valid())
+        test_shapefile_info = shapefile_api_form.get_api_params_with_signature()
 
         # add dv info
         test_shapefile_info.update(self.dataverse_test_info)
@@ -108,7 +109,6 @@ class TestWorldMapShapefileImport(WorldMapBaseTest):
         self.assertEqual(r.json().get('message'), expected_msg\
                     , 'Should receive message: "%s".  Received: %s' % (expected_msg, r.text))
 
-
         #-----------------------------------------------------------
         msgn("(1d) Test WorldMap shapefile import API but send 2 files instead of 1")
         #-----------------------------------------------------------
@@ -119,7 +119,7 @@ class TestWorldMapShapefileImport(WorldMapBaseTest):
         #   Test WorldMap shapefile import API but send 2 files instead of 1
         #
         try:
-            r = requests.post(api_url, data=self.get_worldmap_token_dict(), files=files )
+            r = requests.post(api_url, data=test_shapefile_info, files=files )
         except requests.exceptions.ConnectionError as e:
             msgx('Connection error: %s' % e.message)
         except:
@@ -140,10 +140,16 @@ class TestWorldMapShapefileImport(WorldMapBaseTest):
         # prep file
         files = {'file': open( self.test_shapefile_name, 'rb')}
 
-        #   TTest WorldMap shapefile import API with payload except file (metadata is not given)
+        test_shapefile_info_missing_pieces = test_shapefile_info.copy()
+        test_shapefile_info_missing_pieces.pop('dv_user_email')
+        test_shapefile_info_missing_pieces.pop('abstract')
+        test_shapefile_info_missing_pieces.pop('shapefile_name')
+        test_shapefile_info_missing_pieces.pop('title')
+
+        #   Test WorldMap shapefile import API with payload except file (metadata is not given)
         #
         try:
-            r = requests.post(api_url, data=self.get_worldmap_token_dict(), files=files )
+            r = requests.post(api_url, data=test_shapefile_info_missing_pieces, files=files )
         except requests.exceptions.ConnectionError as e:
             msgx('Connection error: %s' % e.message)
         except:
@@ -157,42 +163,46 @@ class TestWorldMapShapefileImport(WorldMapBaseTest):
                 , 'Should receive message: "%s".  Received: %s' % (expected_msg, r.text))
         
 
-
         
         #-----------------------------------------------------------
         msgn("(1f) Test ShapefileImportDataForm. Use data missing the 'title' attribute")
         #-----------------------------------------------------------
         # Pop 'title' from shapefile info
         #
-        test_shapefile_info = self.shapefile_test_info.copy()
-        test_shapefile_info.pop('title')
+        test_shapefile_info_missing_pieces = test_shapefile_info.copy()
+        test_shapefile_info_missing_pieces.pop('title')
         
         # Form should mark data as invalid
         #
-        f1_shapefile_info = ShapefileImportDataForm(test_shapefile_info)
+        f1_shapefile_info = ShapefileImportDataForm(test_shapefile_info_missing_pieces)
         self.assertEqual(f1_shapefile_info.is_valid(), False, "Data should be invalid")
         self.assertTrue(len(f1_shapefile_info.errors.values()) == 1, "Form should have one error")
         self.assertTrue(f1_shapefile_info.errors.has_key('title'), "Error keys should contain 'title'")
         self.assertEqual(f1_shapefile_info.errors.values(), [[u'This field is required.']]\
                         , "Error for 'title' field should be: [[u'This field is required.']]")
 
-
+        
         #-----------------------------------------------------------
         msgn("(1g) Test ShapefileImportDataForm. Use good data")
         #-----------------------------------------------------------
-        # Pop 'title' from shapefile info
-        #
-        test_shapefile_info = self.shapefile_test_info.copy()
+        #test_shapefile_info = self.shapefile_test_info.copy()
 
         f2_shapefile_info = ShapefileImportDataForm(test_shapefile_info)
         self.assertTrue(f2_shapefile_info.is_valid(), "Data should be valid")
 
         #-----------------------------------------------------------
-        msgn("(1h) Test WorldMap shapefile import API with INCOMPLETE data payload.")
+        msgn("(1h) Test WorldMap shapefile import API without SIGNATURE_KEY.")
         #-----------------------------------------------------------
-        # Get basic shapefile info (missing dataverse info)
-        test_shapefile_info = self.shapefile_test_info.copy()
-
+        # Get basic shapefile info
+        shapefile_api_form = ShapefileImportDataForm(self.shapefile_test_info)
+        self.assertTrue(shapefile_api_form.is_valid())
+        
+        #test_shapefile_info = shapefile_api_form.get_api_params_with_signature()
+        test_shapefile_info = shapefile_api_form.cleaned_data
+        
+        # add dv info
+        test_shapefile_info.update(self.dataverse_test_info)
+        
         # prep file
         files = {'file': open( self.test_shapefile_name, 'rb')}
 
@@ -212,25 +222,25 @@ class TestWorldMapShapefileImport(WorldMapBaseTest):
         msg(r.status_code)
     
         self.assertEqual(r.status_code, 400, "Should receive 400 error.  Received: %s\n%s" % (r.status_code, r.text))
-        expected_msg = '(The WorldMap could not verify the data.)'
+        expected_msg = 'Invalid signature on request.  Failed validation with ShapefileImportDataForm'
         self.assertEqual(r.json().get('message'), expected_msg\
                     , 'Should receive message: "%s".  Received: %s' % (expected_msg, r.text))
     
         
-
         #-----------------------------------------------------------
         msgn("(1i) Test WorldMap shapefile import API but file is NOT a shapefile")
         #-----------------------------------------------------------
         # Get basic shapefile info
-        test_shapefile_info = self.shapefile_test_info.copy()
-
-        # add token
-        test_shapefile_info.update(self.get_worldmap_token_dict())
+        shapefile_api_form = ShapefileImportDataForm(self.shapefile_test_info)
+        self.assertTrue(shapefile_api_form.is_valid())
+        
+        test_shapefile_info = shapefile_api_form.get_api_params_with_signature()
 
         # add dv info
         test_shapefile_info.update(self.dataverse_test_info)
-        test_shapefile_info['datafile_id'] = 4001
+        #test_shapefile_info['datafile_id'] = 4001
         
+    
         # prep file        
         files = {'file': open(self.test_bad_file, 'rb')}
         
@@ -249,6 +259,7 @@ class TestWorldMapShapefileImport(WorldMapBaseTest):
 
         msg(r.status_code)
         msg(r.text)
+        
         self.assertEqual(r.status_code, 500, "Should receive 500 message.  Received: %s\n%s" % (r.status_code, r.text))
         expected_err = 'Unexpected error during upload:'
         self.assertTrue(r.text.find(expected_err) > -1\
@@ -267,11 +278,11 @@ class TestWorldMapShapefileImport(WorldMapBaseTest):
         msgn("(2a) Test WorldMap shapefile import API -- with GOOD data/file")
         #-----------------------------------------------------------
         # Get basic shapefile info
-        test_shapefile_info = self.shapefile_test_info.copy()
+        shapefile_api_form = ShapefileImportDataForm(self.shapefile_test_info)
+        self.assertTrue(shapefile_api_form.is_valid())
 
-        # add token
-        test_shapefile_info.update(self.get_worldmap_token_dict())
-
+        test_shapefile_info = shapefile_api_form.get_api_params_with_signature()
+                
         # add dv info
         test_shapefile_info.update(self.dataverse_test_info)
 
@@ -297,6 +308,7 @@ class TestWorldMapShapefileImport(WorldMapBaseTest):
         #
         self.assertEqual(r.status_code, 200, "Should receive 200 message.  Received: %s\n%s" % (r.status_code, r.text))
 
+        
         #-----------------------------------------------------------
         msgn("(2b) Examine JSON result from WorldMap shapefile import API")
         #-----------------------------------------------------------
@@ -337,7 +349,7 @@ def get_suite():
     suite = unittest.TestSuite()
     
     suite.addTest(TestWorldMapShapefileImport('run_test01_bad_shapefile_imports'))
-    suite.addTest(TestWorldMapShapefileImport('run_test02_good_shapefile_import'))
+    #suite.addTest(TestWorldMapShapefileImport('run_test02_good_shapefile_import'))
 
     return suite
 

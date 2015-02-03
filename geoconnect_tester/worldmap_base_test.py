@@ -27,6 +27,7 @@ settings.configure(
     },
     DATAVERSE_TOKEN_KEYNAME='GEOCONNECT_TOKEN',
     WORLDMAP_SERVER_URL=load_settings_dict()['WORLDMAP_SERVER'],
+    WORLDMAP_TOKEN_FOR_DATAVERSE=load_settings_dict()['WORLDMAP_TOKEN_VALUE'],
     INSTALLED_APPS = ('shared_dataverse_information.layer_classification',)
 )    
 #------------------

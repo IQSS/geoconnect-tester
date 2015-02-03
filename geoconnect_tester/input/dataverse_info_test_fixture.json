@@ -20,7 +20,7 @@
     "dataverse_description": "The root dataverse.", 
 
     "dv_user_id": 1, 
-    "dv_user_email": "pete@malinator.com", 
+    "dv_user_email": "dvuser@harvard.edu", 
     "dv_username": "Pete Privileged", 
     "return_to_dataverse_url": "http://localhost:8080/dataset.xhtml?id=1383&versionId362"
 }

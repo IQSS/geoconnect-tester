@@ -114,7 +114,7 @@ class TestWorldMapClassification(WorldMapBaseTest):
         MAKE CLASSIFY FORM IN SHARED-DATAVERSE-INFO
         """
         ###!!!!
-        
+        return
         #-----------------------------------------------------------
         msgn("(1b) Make classification call")
         #-----------------------------------------------------------
@@ -131,11 +131,11 @@ class TestWorldMapClassification(WorldMapBaseTest):
                 			,  'method': u'quantile'
                 			,  'reverse': False
             			}
-            			
-        f_classify = ClassifyLayerForm(initial_classify_params\
-                                            kwargs={'':\
-                            },
-                            )
+        
+        #f_classify = ClassifyLayerForm(initial_classify_params\
+        #                                    kwargs={'':''\
+        #                    },
+        #                    )
         #self.assertTrue(f_classify.is_valid(), 'ClassifyLayerForm did not validate. Errors:\n %s' % f_classify.errors)
         
         #formatted_classify_params = f_classify.cleaned_data
