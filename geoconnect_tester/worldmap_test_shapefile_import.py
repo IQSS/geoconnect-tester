@@ -14,12 +14,13 @@ from worldmap_base_test import WorldMapBaseTest
 
 # API path(s) are here
 #
-from shared_dataverse_information.worldmap_api_helper.url_helper import ADD_SHAPEFILE_API_PATH
+from shared_dataverse_information.worldmap_api_helper.url_helper import ADD_SHAPEFILE_API_PATH, DELETE_LAYER_API_PATH
 
 # Validation forms from https://github.com/IQSS/shared-dataverse-information
 #
 from shared_dataverse_information.shapefile_import.forms import ShapefileImportDataForm
 from shared_dataverse_information.map_layer_metadata.forms import MapLayerMetadataValidationForm
+from shared_dataverse_information.dataverse_info.forms_existing_layer import DataverseInfoValidationFormWithKey
 
 from selenium_utils.msg_util import *
 
@@ -339,17 +340,167 @@ class TestWorldMapShapefileImport(WorldMapBaseTest):
                         % f3_dataverse_info.errors \
                 )
 
+                
+    def run_test03_delete_shapefile_from_worldmap(self):
+        #-----------------------------------------------------------
+        msgt("--- Delete shapefile ---")
+        #-----------------------------------------------------------
 
-        return
-        msg(r.status_code)
-        msg(r.text)
+        #-----------------------------------------------------------
+        msgn("(3a) Send delete request - Missing parameter")
+        #-----------------------------------------------------------        
+        api_prep_form = DataverseInfoValidationFormWithKey(self.dataverse_test_info)
+        self.assertTrue(api_prep_form.is_valid()\
+                        , "Error.  Validation failed. (DataverseInfoValidationFormWithKey):\n%s" % api_prep_form.errors)
+        
+        data_params = api_prep_form.get_api_params_with_signature()
+
+        # Pop needed key
+        data_params.pop('datafile_label')
+
+        try:
+            r = requests.post(DELETE_LAYER_API_PATH\
+                               , data=data_params\
+                            )
+        except requests.exceptions.ConnectionError as e:
+            msgx('Connection error: %s' % e.message)
+        except:
+            msgx("Unexpected error: %s" % sys.exc_info()[0])
+        
+        self.assertEqual(r.status_code, 400, "Expected status code 400 but received '%s'" % r.status_code)
+        
+        try:
+            json_resp = r.json()
+        except:
+            self.assertTrue(False, "Failed to convert response to JSON. Received: %s" % r.text)
+
+            #   Expect 'success' key to be False
+        #
+        self.assertTrue(json_resp.has_key('success'), 'JSON should have key "success".  But found keys: %s' % json_resp.keys())
+        self.assertEqual(json_resp.get('success'), False, "'success' value should be 'False'")
+        expected_msg = 'Invalid data for delete request.'
+        self.assertEqual(json_resp.get('message'), expected_msg, 'Message should be "%s"' % expected_msg)
+        
+        
+        #-----------------------------------------------------------
+        msgn("(3b) Send delete request - Bad parameter which leads to bad signature")
+        #-----------------------------------------------------------        
+        api_prep_form = DataverseInfoValidationFormWithKey(self.dataverse_test_info)
+        self.assertTrue(api_prep_form.is_valid()\
+                        , "Error.  Validation failed. (DataverseInfoValidationFormWithKey):\n%s" % api_prep_form.errors)
+
+        data_params = api_prep_form.get_api_params_with_signature()
+
+        # Chnange key used to search for map layer
+        #
+        data_params['dataverse_installation_name'] = 'bah bah black sheep'
+        
+        try:
+            r = requests.post(DELETE_LAYER_API_PATH\
+                               , data=data_params\
+                            )
+        except requests.exceptions.ConnectionError as e:
+            msgx('Connection error: %s' % e.message)
+        except:
+            msgx("Unexpected error: %s" % sys.exc_info()[0])
+
+        self.assertEqual(r.status_code, 401, "Expected status code 401 but received '%s'" % r.status_code)
+
+        try:
+            json_resp = r.json()
+        except:
+            self.assertTrue(False, "Failed to convert response to JSON. Received: %s" % r.text)
+
+
+        #   Expect 'success' key to be False
+        #
+        self.assertTrue(json_resp.has_key('success'), 'JSON should have key "success".  But found keys: %s' % json_resp.keys())
+        self.assertEqual(json_resp.get('success'), False, "'success' value should be 'False'")
+        expected_msg = 'Authentication failed.'
+        self.assertEqual(json_resp.get('message'), expected_msg, 'Message should be "%s"' % expected_msg)
+    
+
+        #-----------------------------------------------------------
+        msgn("(3c) Send delete request - Bad parameters for nonexistent layer")
+        #-----------------------------------------------------------   
+        dataverse_test_info_copy = self.dataverse_test_info.copy()
+        dataverse_test_info_copy['dataverse_installation_name'] = 'bah bah black sheep'
+        
+        api_prep_form = DataverseInfoValidationFormWithKey(dataverse_test_info_copy)
+        self.assertTrue(api_prep_form.is_valid()\
+                        , "Error.  Validation failed. (DataverseInfoValidationFormWithKey):\n%s" % api_prep_form.errors)
+
+        data_params = api_prep_form.get_api_params_with_signature()
+
+        try:
+            r = requests.post(DELETE_LAYER_API_PATH\
+                               , data=data_params\
+                            )
+        except requests.exceptions.ConnectionError as e:
+            msgx('Connection error: %s' % e.message)
+        except:
+            msgx("Unexpected error: %s" % sys.exc_info()[0])
+
+        self.assertEqual(r.status_code, 404, "Expected status code 4 but received '%s'" % r.status_code)
+
+        try:
+            json_resp = r.json()
+        except:
+            self.assertTrue(False, "Failed to convert response to JSON. Received: %s" % r.text)
+
+
+        #   Expect 'success' key to be False
+        #
+        self.assertTrue(json_resp.has_key('success'), 'JSON should have key "success".  But found keys: %s' % json_resp.keys())
+        self.assertEqual(json_resp.get('success'), False, "'success' value should be 'False'")
+        expected_msg = 'Existing layer not found.'
+        self.assertEqual(json_resp.get('message'), expected_msg, 'Message should be "%s"' % expected_msg)
+        
+        
+        #-----------------------------------------------------------
+        msgn("(3d) Send delete request - Good parameters")
+        #-----------------------------------------------------------        
+        api_prep_form = DataverseInfoValidationFormWithKey(self.dataverse_test_info)
+        self.assertTrue(api_prep_form.is_valid()\
+                        , "Error.  Validation failed. (DataverseInfoValidationFormWithKey):\n%s" % api_prep_form.errors)
+        
+        data_params = api_prep_form.get_api_params_with_signature()
+
+        try:
+            r = requests.post(DELETE_LAYER_API_PATH\
+                               , data=data_params\
+                            )
+        except requests.exceptions.ConnectionError as e:
+            msgx('Connection error: %s' % e.message)
+        except:
+            msgx("Unexpected error: %s" % sys.exc_info()[0])
+        
+        self.assertEqual(r.status_code, 200, "Expected status code 200 but received '%s'" % r.status_code)
+
+
+        #-----------------------------------------------------------
+        msgn("(3e) Examine JSON result from WorldMap shapefile delete API")
+        #-----------------------------------------------------------
+        try:
+            json_resp = r.json()
+        except:
+            self.assertTrue(False, "Failed to convert response to JSON. Received: %s" % r.text)
+
+        #   Expect 'success' key to be True
+        #
+        self.assertTrue(json_resp.has_key('success'), 'JSON should have key "success".  But found keys: %s' % json_resp.keys())
+        self.assertEqual(json_resp.get('success'), True, "'success' value should be 'True'")
+        expected_msg = "Layer deleted"
+        self.assertEqual(json_resp.get('message'), expected_msg, 'Message should be "%s"'% expected_msg)
+
         
         
 def get_suite():
     suite = unittest.TestSuite()
     
     suite.addTest(TestWorldMapShapefileImport('run_test01_bad_shapefile_imports'))
-    #suite.addTest(TestWorldMapShapefileImport('run_test02_good_shapefile_import'))
+    suite.addTest(TestWorldMapShapefileImport('run_test02_good_shapefile_import'))
+    suite.addTest(TestWorldMapShapefileImport('run_test03_delete_shapefile_from_worldmap'))
 
     return suite
 
