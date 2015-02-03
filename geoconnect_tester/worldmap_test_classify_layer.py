@@ -1,6 +1,11 @@
 """
 Run tests for the WorldMap Shapefile import API
 """
+if __name__=='__main__':
+    # temp use before next shared_dataverse_information version
+    import sys
+    sys.path.append('/Users/rmp553/Documents/iqss-git/shared-dataverse-information/')
+    
 import requests
 from os.path import abspath, dirname, isfile, join, isdir
 from settings_helper import load_settings_dict
@@ -14,9 +19,9 @@ from worldmap_base_test import WorldMapBaseTest
 
 # API path(s) are here
 #
-from shared_dataverse_information.worldmap_api_helper.url_helper import CLASSIFY_LAYER_API_PATH\
-                        , GET_LAYER_INFO_BY_USER_API_PATH, GET_LAYER_INFO_BY_USER_AND_FILE_API_PATH
-from shared_dataverse_information.dataverse_info.forms import CheckForExistingLayerFormBasic
+from shared_dataverse_information.worldmap_api_helper.url_helper import CLASSIFY_LAYER_API_PATH                        
+
+
 # Validation forms from https://github.com/IQSS/shared-dataverse-information
 #
 from shared_dataverse_information.shapefile_import.forms import ShapefileImportDataForm
@@ -109,14 +114,8 @@ class TestWorldMapClassification(WorldMapBaseTest):
         self.assertTrue( self.existing_layer_name is not None, 'self.existing_layer_name cannot be None')
         
 
-        ###!!!!!
-        """
-        MAKE CLASSIFY FORM IN SHARED-DATAVERSE-INFO
-        """
-        ###!!!!
-        return
         #-----------------------------------------------------------
-        msgn("(1b) Make classification call")
+        msgn("(1f) Make classification call")
         #-----------------------------------------------------------
         api_classify_layer_url = CLASSIFY_LAYER_API_PATH
         msg('api_classify_layer_url: %s' % api_classify_layer_url)
@@ -131,13 +130,10 @@ class TestWorldMapClassification(WorldMapBaseTest):
                 			,  'method': u'quantile'
                 			,  'reverse': False
             			}
+        return
         
-        #f_classify = ClassifyLayerForm(initial_classify_params\
-        #                                    kwargs={'':''\
-        #                    },
-        #                    )
-        #self.assertTrue(f_classify.is_valid(), 'ClassifyLayerForm did not validate. Errors:\n %s' % f_classify.errors)
-        
+        f_classify = ClassifyLayerForm(initial_classify_params)
+        self.assertTrue(f_classify.is_valid(), 'ClassifyLayerForm did not validate. Errors:\n %s' % f_classify.errors)
         #formatted_classify_params = f_classify.cleaned_data
         
         initial_classify_params.update(self.get_worldmap_token_dict())   
