@@ -226,9 +226,15 @@ def make_dataverse(selenium_helper, dv_info):
     # description
     sh.find_by_id_send_keys('dataverseForm:description', dv_info['description'])
 
-    # category
+    # category (dropdown)
     sh.find_by_id_send_keys('dataverseForm:dataverseCategory', dv_info['category'], clear_existing_val=False)
 
+    # subject (checkbox)
+    sh.find_by_id_click("dataverseForm:subject:0")  # arts
+    sh.find_by_id_click("dataverseForm:subject:2")  # business  
+    
+    #<input id="dataverseForm:subject:0" type="checkbox" value="2" name="dataverseForm:subject">
+    
     # save
     sh.find_by_id_click('dataverseForm:save')
 
