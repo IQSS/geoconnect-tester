@@ -70,7 +70,7 @@ class LoadShapefileTester:
         #self.start_adding_new_data_including_files(self.get_sample_dataset_02_params())
 
         self.make_dataverse_from_dict(self.get_test_dataverse_params('Eat Boutique'))
-        #self.start_adding_new_data_including_files(self.get_sample_dataset_01_params())
+        self.start_adding_new_data_including_files(self.get_sample_dataset_01_params())
 
         
         #delete_dataverse_by_alias(self.sdriver, 'shapefile-test')
@@ -98,7 +98,7 @@ class LoadShapefileTester:
           d = self.sdriver
           d.find_link_in_soup_and_click('New Dataset')
 
-          pause_script()
+          pause_script(5)
           # try to add title
           # find <a rel="title" class="pre-input-tag"></a>
           prefix = 'pre-input-'
@@ -117,8 +117,13 @@ class LoadShapefileTester:
                             , input_type='textarea'\
                             )
 
-          # business checkbox
-          d.find_by_css_selector_and_click("input[value='3']")  
+          # Chemistry checkbox
+          print 'try to find chem'
+          elem_list = d.driver.find_elements_by_xpath("//*[contains(text(), 'Chemistry')]")
+          print 'found it?', elem_list, len(elem_list)
+          for entry in elem_list: 
+              print entry
+              entry.click()
           
           file_upload_element = d.driver.find_element_by_id('datasetForm:tabView:fileUpload_input')
           

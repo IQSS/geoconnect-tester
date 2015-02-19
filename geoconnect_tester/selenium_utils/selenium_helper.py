@@ -94,10 +94,9 @@ class SeleniumHelper:
         self.driver.get(lnk)
         
     def find_by_css_selector_and_click(self, selection_text, click=True):
+        assert self.driver is not None, 'self.driver cannot be None'
+        assert selection_text is not None, 'selection_text cannot be None'
 
-        if self.driver is None or selection_text is None:
-            return False
-        
         e = None
         
         try:
