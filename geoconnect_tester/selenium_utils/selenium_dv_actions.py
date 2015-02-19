@@ -216,12 +216,12 @@ def make_dataverse(selenium_helper, dv_info):
     sh.find_by_id_send_keys('dataverseForm:name', dv_info['name'])
 
     # alias
-    sh.find_by_id_send_keys('dataverseForm:alias', dv_info['alias'])
+    sh.find_by_id_send_keys('dataverseForm:identifier', dv_info['alias'])
 
     # contact email
     if dv_info.has_key('contact_email'):
         sh.find_by_id_send_keys('dataverseForm:contactEmail', dv_info['contact_email'])
-
+        # dataverseForm:j_idt206:0:contactEmail
 
     # description
     sh.find_by_id_send_keys('dataverseForm:description', dv_info['description'])

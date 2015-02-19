@@ -1,3 +1,5 @@
+tabular-api/code/server_creds.json
+tabular-api/input/*
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

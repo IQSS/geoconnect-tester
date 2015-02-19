@@ -447,9 +447,9 @@ class RetrieveFileMetadataTestCase(DataverseMapDataBaseTest):
 def get_suite():
     suite = unittest.TestSuite()
     
-    suite.addTest(RetrieveFileMetadataTestCase('run_test01_datafile_metadata'))
+    #suite.addTest(RetrieveFileMetadataTestCase('run_test01_datafile_metadata'))
     #suite.addTest(RetrieveFileMetadataTestCase('run_test_02_map_metadata_bad_updates'))
-    #suite.addTest(RetrieveFileMetadataTestCase('run_test_03_map_metadata_good_update'))
+    suite.addTest(RetrieveFileMetadataTestCase('run_test_03_map_metadata_good_update'))
     #suite.addTest(RetrieveFileMetadataTestCase('run_test_04_map_metadata_delete'))
 
     # Deletes token

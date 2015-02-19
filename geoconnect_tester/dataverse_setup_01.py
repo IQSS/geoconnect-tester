@@ -70,7 +70,7 @@ class LoadShapefileTester:
         #self.start_adding_new_data_including_files(self.get_sample_dataset_02_params())
 
         self.make_dataverse_from_dict(self.get_test_dataverse_params('Eat Boutique'))
-        self.start_adding_new_data_including_files(self.get_sample_dataset_01_params())
+        #self.start_adding_new_data_including_files(self.get_sample_dataset_01_params())
 
         
         #delete_dataverse_by_alias(self.sdriver, 'shapefile-test')
