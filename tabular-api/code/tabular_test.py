@@ -2,26 +2,47 @@
 For developing tabular api
 """
 
-from os.path import join
+from os.path import join, isfile
 import sys
 import json
 import requests
 from msg_util import *
 
 
+"""
+Load up the server and username
+"""
+GEONODD_CREDS_FNAME = 'server_creds.json'
+assert isfile(GEONODD_CREDS_FNAME), 'Server credentials file not found: %s' % GEONODD_CREDS_FNAME
+try:
+    GEONODD_CREDS_JSON = json.loads(open(GEONODD_CREDS_FNAME, 'r').read())
+except:
+    raise Exception('Could not parse tabular credentials JSON file: %s' % 'server_creds.json')
+
+GEONODE_SERVER = GEONODD_CREDS_JSON['SERVER_URL']
+GEONODE_USERNAME = GEONODD_CREDS_JSON['USERNAME']
+GEONODE_PASSWORD = GEONODD_CREDS_JSON['PASSWORD']
+
 INPUT_DIR = join('..', 'input')
+
+
 
 class TabularTest:
     
-    def __init__(self, base_url="x"):
+    def __init__(self, base_url=GEONODE_SERVER, username=GEONODE_USERNAME, pw=GEONODE_PASSWORD):
         self.client = requests.session()
         self.base_url = base_url
-        self.login_url =  self.base_url + "/account/login/"
-        self.csv_upload_url  = self.base_url + '/datatables/api/upload'
-        self.shp_layer_upload_url = self.base_url + '/layers/upload'
-        self.join_datatable_url = self.base_url + '/datatables/api/join'
+
+        self.geonode_username = username
+        self.geonode_password = pw
         
-        #self.datatable_name = None
+        #self.login_url =  self.base_url + "/account/login/" # GeoNode
+        self.login_url =  self.base_url + "/accounts/login/" # WorldMap
+        self.csv_upload_url  = self.base_url + '/datatables/api/upload'
+        #self.shp_layer_upload_url = self.base_url + '/layers/upload'
+        self.join_datatable_url = self.base_url + '/datatables/api/join'
+        self.upload_and_join_datatable_url = self.base_url + '/datatables/api/upload_and_join'
+        self.upload_lat_lng_url = self.base_url + '/datatables/api/upload_lat_lon'
         
     def login_for_cookie(self):
 
@@ -31,15 +52,23 @@ class TabularTest:
         self.client.get(self.login_url)  # sets the cookie
         csrftoken = self.client.cookies['csrftoken']
 
-        login_data = dict(username="x", password="x", csrfmiddlewaretoken=csrftoken)
-        r = self.client.post(self.login_url, data=login_data, headers={"Referer": "test-client"})
+        login_data = dict(username=self.geonode_username\
+                        , password=self.geonode_password\
+                        , csrfmiddlewaretoken=csrftoken\
+                        )
+        #headers=dict(Referer=URL)
+        r = self.client.post(self.login_url\
+                            , data=login_data\
+                            , headers={"Referer": self.login_url}\
+                            #, headers={"Referer": "test-client"}\
+                            )
 
         #print r.text
         print r.status_code
-
+        
         
     def upload_csv_file(self, title, fname_to_upload):
-
+        assert isfile(fname_to_upload), "File to upload not found: %s" % fname_to_upload
         msgt('upload_csv_file: %s' % self.csv_upload_url)
 
         files = {'uploaded_file': open(fname_to_upload,'rb')}
@@ -47,6 +76,10 @@ class TabularTest:
                     , data={'title' : title }\
                     , files=files)
 
+        fname = 'res.html'
+        open(fname, 'w').write(response.text)
+        msg('file written: %s' % fname)
+        
         print response.text
         print response.status_code
         resp_dict = json.loads(response.content)
@@ -88,6 +121,7 @@ class TabularTest:
         new_layer_name = json.loads(response.content)['url'].split('/')[2].replace('%3A', ':')
         print new_layer_name
         
+        
     def join_datatable_to_layer(self, join_props):
         """        
         Join a layer to a csv data table.  Example:
@@ -110,6 +144,60 @@ class TabularTest:
 
         response = self.client.post(self.join_datatable_url, data=join_props)
         print response.content
+
+    def upload_table_with_lat_lng(self, params, fname_to_upload):
+        """
+        Map a table using its lat/lng columns:
+
+            params = {
+                'title' : 'boston income'
+                'lat_column': 'GEO.id2',
+                'lon_column': 'geonode:tl_2013_06_tract',
+            }
+        """
+        assert isfile(fname_to_upload), "File to upload not found: %s" % fname_to_upload
+        assert isinstance(params, dict), "params must be a dict {}"
+        
+        for k in ('title', 'lat_column', 'lon_column'):
+            assert params.has_key(k), "params is missing key: %s" % k
+
+
+        msg(params)
+        files = {'uploaded_file': open(fname_to_upload,'rb')}
+        msg('post url: %s' % self.upload_lat_lng_url)
+        response = self.client.post(self.upload_lat_lng_url\
+                                        , data=params\
+                                        , files=files\
+                                    )
+        print response.content
+
+    def upload_datatable_and_join_to_layer(self, params, fname_to_upload):
+        """        
+        Join a layer to a csv data table.  Example:
+
+            params = {
+                'title' : 'boston income'
+                'table_attribute': 'GEO.id2',
+                'layer_typename': 'geonode:tl_2013_06_tract',
+                'layer_attribute': 'GEOID'
+            }
+        """
+        assert isfile(fname_to_upload), "File to upload not found: %s" % fname_to_upload
+        assert isinstance(params, dict), "params must be a dict {}"
+        
+        for k in ('title', 'table_attribute', 'layer_typename', 'layer_attribute'):
+            assert params.has_key(k), "params is missing key: %s" % k
+
+
+        msg(params)
+        files = {'uploaded_file': open(fname_to_upload,'rb')}
+        response = self.client.post(self.upload_and_join_datatable_url\
+                                        , data=params\
+                                        , files=files\
+                                    )
+        print response.content
+        #print response.status_code
+
         
         
         
