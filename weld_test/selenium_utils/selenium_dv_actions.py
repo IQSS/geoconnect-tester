@@ -1,12 +1,13 @@
-from selenium_helper import SeleniumHelper
-from msg_util import *
-from collections import OrderedDict
-from selenium_dataverse_specs import DataverseInfoChecker
 from datetime import datetime
 import time
 from os.path import realpath, dirname, join, isdir
 import os
-from random import randint
+from random import randint, choice
+from collections import OrderedDict
+
+from selenium_helper import SeleniumHelper
+from selenium_dataverse_specs import DataverseInfoChecker
+from msg_util import *
 
 
 OUTPUT_DIR = join(realpath(dirname(dirname(__file__))), 'output')
@@ -119,6 +120,109 @@ def delete_dataverse_by_alias(selenium_helper, alias):
 
     return delete_current_dataverse(selenium_helper)
 
+
+
+def edit_account_information(selenium_helper):
+    assert isinstance(selenium_helper, SeleniumHelper), "selenium_helper must be a SeleniumHelper object"
+    msgt('edit_account_information')
+
+    if not selenium_helper.find_by_css_selector_and_click("span[id$='lnk_header_account_dropdown']"):
+        msg('Failed to click User Info Dropdown (lnk_header_account_dropdown)')
+        return False
+
+    #  Account Information link
+    if not selenium_helper.find_link_by_text_click('Account Information'):
+        msg('Failed to click "Account Information" link')
+        pause_script(1)
+        return False
+
+    # Edit Account Button
+    if not selenium_helper.find_by_id_click("editAccount"):
+        msg('Failed to click element with id "editAccount"')
+        return False
+
+
+    # Account Information Link
+    if not selenium_helper.find_by_id_click("dataverseUserForm:editAccount"):
+        msg('Failed to click element with id "dataverseUserForm:editAccount"')
+        return False
+
+    pause_script()
+
+    #selenium_helper.list_input_elements()
+
+    #----------------------------
+    # Set new affiliation
+    #----------------------------
+    affiliations = ['Eastern U.', 'Western U.', 'Southern U.', 'Northern U.', 'International U.']
+    new_affil = choice(affiliations)
+    if not selenium_helper.find_by_id_send_keys('dataverseUserForm:accountInfoView:affiliation',
+                                                 new_affil):
+        msg('Failed to set new position of "%s"' % new_affil)
+        return False
+
+    #----------------------------
+    # Set new position
+    #----------------------------
+    positions = """plumber programmer president farmer peanut-farmer analyst postdoc faculty""".split()
+    new_position = choice(positions)
+    if not selenium_helper.find_by_id_send_keys('dataverseUserForm:accountInfoView:position',
+                                                 new_position):
+        msg('Failed to set new position of "%s"' % new_position)
+        return False
+
+    # Click Save
+    if not selenium_helper.find_by_id_click("dataverseUserForm:accountInfoView:save"):
+        msg('Failed to click element with id "dataverseUserForm:accountInfoView:save"')
+        return False
+    pause_script()
+
+    return True
+
+
+def edit_theme(selenium_helper):
+    """
+    Edit theme for the current dataset
+    """
+    assert isinstance(selenium_helper, SeleniumHelper), "selenium_helper must be a SeleniumHelper object"
+
+    # Edit button
+    if not selenium_helper.get_button_by_name_and_click('Edit'):
+        msg('Failed to press "Edit" button')
+        return False
+
+    #  Theme + Widgets link
+    if not selenium_helper.find_by_id_click('dataverseForm:themeWidgetsOpts'):
+        msg('Failed to click " Theme + Widgets" link')
+        return False
+    pause_script()
+
+    # Click background color button
+    #if not selenium_helper.find_by_id_click('themeWidgetsForm:themeWidgetsTabView:backgroundColor_button'):
+    #    msg('Failed to click "Background Color" button')
+    #    return False
+
+    # Set color via hidden form field
+    id_bgcolor = 'themeWidgetsForm:themeWidgetsTabView:backgroundColor_input'
+    #if not selenium_helper.unhide_element_by_id(id_bgcolor):
+    #    msg('Failed to unhide color field')
+    #    return False
+
+    new_color = choice("""ffcc00 ff0000 006699 A00000 99FF33 CCFF99 336666""".split())
+    if not selenium_helper.find_hidden_input_and_enter_text(id_bgcolor, new_color):
+        msg('Failed to set color')
+        return False
+    msg('Set new background color to %s' % new_color)
+
+    # Save Changes
+    if not selenium_helper.get_button_by_name_and_click('Save Changes'):
+        msg('Failed to save changes')
+        return False
+
+    pause_script()
+    return True
+
+
 def delete_current_dataverse(selenium_helper):
     """
     Delete the current dataset
@@ -131,7 +235,7 @@ def delete_current_dataverse(selenium_helper):
         msg('Failed to press "Edit" button')
         return False
 
-    # Delete Dataverse link
+    #  Delete Dataset link
     if not selenium_helper.find_by_id_click('dataverseForm:deleteDataset'):
         msg('Failed to click "Delete Dataset" link')
         return False

@@ -16,7 +16,9 @@ from selenium_utils.selenium_dv_actions import pause_script, login_user, logout_
                         delete_dataverse_by_alias,\
                         does_dataverse_exist,\
                         goto_random_dvobject,\
-                        delete_current_dataverse
+                        delete_current_dataverse,\
+                        edit_account_information,\
+                        edit_theme
 
 
 class BrowseTester:
@@ -37,7 +39,7 @@ class BrowseTester:
         """
         assert num_loops > 0, "num_loops must be greater than 0"
 
-        self.sdriver.set_window_size(900, 500)
+        self.sdriver.set_window_size(900, 600)
         self.sdriver.set_window_position(700, 100)
 
         self.login()
@@ -55,34 +57,51 @@ class BrowseTester:
         - Delete it
         """
         assert num_loops > 0, "num_loops must be greater than 0"
-        self.sdriver.set_window_size(900, 500)
+        self.sdriver.set_window_size(900, 600)
         self.sdriver.set_window_position(700, 100)
 
         self.login()
+        #self.sdriver.goto_link('https://dvn-build.hmdc.harvard.edu/dataverse/2015-subaru-forester-170-hp')
+        #pause_script(2)
+        #edit_theme(self.sdriver)
+        #return
 
         msgt('run_routine1 for %s loops' % num_loops)
         for x in range(1, num_loops+1):
             msgt('Loop: %s' % x)
 
-            if random.randint(1,2) == 1:
-                do_delete = False
-            else:
-                do_delete = True
+
+            # (1) Edit account information
+            edit_account_information(self.sdriver)
+
+            # (2) Make a dataverse
+            #if random.randint(1,2) == 1:
+            #    do_delete = False
+            #else:
+            do_delete = True
 
             self.make_dataverse_from_dict(self.get_test_car_dv_params(),
-                                        publish_it=True,
-                                        delete_it=do_delete)
-            # Every 2nd dataset/login and logout
-            if x > 1 and (x % 2 == 0):
+                                        publish_it=True)
+                                        #delete_it=do_delete)
+
+            edit_theme(self.sdriver)
+
+            if random.randint(1,2) == 1:
+                delete_current_dataverse(self.sdriver)
+
+            # (3) Ever 4th loop, login and logout
+            if x > 1 and (x % 4 == 0):
                 logout_user(self.sdriver)
                 pause_script()
                 self.login()
 
-            for x in range(1, 3):
-                msgn('Go to 2 random links from front page')
-                goto_random_dvobject(self.sdriver)
+            # (4) Go to a random link from front page
+            #for x in range(1, 3):
+            #    msgn('Go to 2 random links from front page')
+            goto_random_dvobject(self.sdriver)
 
     def start_process(self):
+
 
         self.make_dataverse_from_dict(self.get_test_car_dv_params())
 
@@ -261,7 +280,7 @@ def run_as_user(dataverse_url, auth, expected_name):
 
     tester = BrowseTester(dataverse_url, auth, expected_name=expected_name)
 
-    tester.run_routine2(10)
+    tester.run_routine2(7)
     #tester.start_process()  # make dataverse, publish it; make data set, publish it
 
     # workon publish

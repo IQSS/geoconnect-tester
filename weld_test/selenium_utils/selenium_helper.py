@@ -74,6 +74,40 @@ class SeleniumHelper:
         return False
 
 
+    def find_hidden_input_and_enter_text(self, id_name, input_val):
+        assert self.driver is not None, "self.driver cannot be None"
+        assert id_name is not None, "id_name cannot be None"
+        assert input_val is not None, "input_val cannot be None"
+
+        if not self.unhide_element_by_id(id_name):
+            return False
+
+        js_snippet = "document.getElementById('%s').value='%s';" % (id_name, input_val)
+
+        try:
+            self.driver.execute_script(js_snippet)
+            self.sleep(1)
+        except:
+            msg('Failed to set color with snippet:\n%s' % js_snippet)
+            return False
+
+        return True
+
+    def unhide_element_by_id(self, id_name):
+        assert self.driver is not None, "self.driver cannot be None"
+        assert id_name is not None, "id_name cannot be None"
+
+        js_snippet = "document.getElementById('%s').setAttribute('type', 'text');" % id_name
+
+        try:
+            self.driver.execute_script(js_snippet)
+            self.sleep(1)
+        except:
+            msg('Failed to unhide element with snippet:\n%s' % js_snippet)
+            return False
+
+        return True
+
     def find_link_in_soup_and_click(self, link_name, url_fragment=None):
         msg('find_link_in_soup_and_click  [link_name:%s] [url_fragment:%s]' % (link_name, url_fragment))
         soup = BeautifulSoup(self.driver.page_source)
@@ -117,7 +151,13 @@ class SeleniumHelper:
             e.click()
         
         return True
-            
+
+    def list_input_elements(self):
+        msgt('list_input_elements')
+        assert self.driver is not None, 'self.sdriver cannot be None'
+
+        for e in self.driver.find_elements(By.TAG_NAME, 'input'):
+            print e, e.id, e.text
 
     def get_button_by_name_and_click(self, btn_text, btn_text2=None):
         assert self.driver is not None, 'self.sdriver cannot be None'
@@ -166,7 +206,7 @@ class SeleniumHelper:
         return True
         
     def find_by_id_send_keys(self, id_val, keys_val, clear_existing_val=True):
-        print 'find_by_id_send_keys  [id:%s] [keys:%s]' % (id_val, keys_val)
+        print 'find_by_id_send_keys  [id: "%s"] [keys: "%s"]' % (id_val, keys_val)
         
         if self.driver is None or id_val is None or keys_val is None:
             return False
@@ -175,6 +215,8 @@ class SeleniumHelper:
         try:
             e = self.driver.find_element_by_id(id_val)
         except selenium.common.exceptions.NoSuchElementException:            
+            all_ids = []
+
             msgt('Error: Could not find element by id: %s' % id_val)
             return False
 

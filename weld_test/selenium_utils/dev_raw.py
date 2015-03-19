@@ -25,3 +25,23 @@ for e in d.find_elements(By.TAG_NAME, 'button'):
         e.click()
         break
 
+# Set color
+s = "document.getElementById('themeWidgetsForm:themeWidgetsTabView:backgroundColor_input').setAttribute('type', 'text');"
+d.execute_script(s)
+
+s2 = "document.getElementById('themeWidgetsForm:themeWidgetsTabView:backgroundColor_input').value='ffcc00';"
+d.execute_script(s2)
+
+s = "document.getElementById('themeWidgetsForm:themeWidgetsTabView:backgroundColor_input').value='ffcc00';"
+d.execute_script(s)
+
+e = d.find_element_by_id('themeWidgetsForm:themeWidgetsTabView:backgroundColor_button')
+#WebElement inputt=driver.findElement(By.cssSelector('div.formfield input.Test_type.required'));
+e = d.find_element_by_css_selector("Div[class*='ui-colorpicker_hex'")
+e = d.find_element_by_class_name('ui-colorpicker_hex')
+
+elem = d.find_element_by_class_name('ui-colorpicker_hex')
+
+e = d.find_element_by_css_selector("div.ui-colorpicker_hex input")
+
+e = d.find_element_by_id('themeWidgetsForm:themeWidgetsTabView:backgroundColor_button')
