@@ -39,7 +39,7 @@ class BrowseTester:
         """
         assert num_loops > 0, "num_loops must be greater than 0"
 
-        self.sdriver.set_window_size(900, 600)
+        self.sdriver.set_window_size(1000, 700)
         self.sdriver.set_window_position(700, 100)
 
         self.login()
@@ -57,40 +57,45 @@ class BrowseTester:
         - Delete it
         """
         assert num_loops > 0, "num_loops must be greater than 0"
-        self.sdriver.set_window_size(900, 600)
+        self.sdriver.set_window_size(1000, 800)
         self.sdriver.set_window_position(700, 100)
 
         self.login()
-        #self.sdriver.goto_link('https://dvn-build.hmdc.harvard.edu/dataverse/2015-subaru-forester-170-hp')
+        pause_script(2)
+        #self.sdriver.goto_link('https://dvn-build.hmdc.harvard.edu/dataverse/2015-toyota-prius-plug-in-hybrid-98-hp')
         #pause_script(2)
         #edit_theme(self.sdriver)
-        #return
 
         msgt('run_routine1 for %s loops' % num_loops)
         for x in range(1, num_loops+1):
             msgt('Loop: %s' % x)
 
-
             # (1) Edit account information
             edit_account_information(self.sdriver)
+            self.check_name()
 
-            # (2) Make a dataverse
-            #if random.randint(1,2) == 1:
-            #    do_delete = False
-            #else:
-            do_delete = True
+            # (2) Make dataverse from dict
+            if random.randint(1, 4) == 1:
+                self.make_dataverse_from_dict(self.get_test_car_dv_params())
+            else:
+                self.make_dataverse_from_dict(self.get_test_animal_dv_params())
 
-            self.make_dataverse_from_dict(self.get_test_car_dv_params())
-                                        #publish_it=True)
-                                        #delete_it=do_delete)
+
+            if random.randint(1,5) == 1:
+                delete_current_dataverse(self.sdriver)
+                pause_script()
+                self.check_name()
+                continue
 
             edit_theme(self.sdriver)
-
-            if random.randint(1,2) == 1:
-                delete_current_dataverse(self.sdriver)
-
+            self.check_name()
             if random.randint(1,2) == 1:
                 publish_dataverse(self.sdriver)
+                pause_script()
+
+            self.make_dataset_including_file(self.get_test_song_dataset_params(), delete_file=True)
+            pause_script()
+            self.check_name()
 
 
             # (3) Ever 4th loop, login and logout
@@ -109,10 +114,10 @@ class BrowseTester:
 
         self.make_dataverse_from_dict(self.get_test_car_dv_params())
 
-        #self.start_adding_new_data_including_files(self.get_sample_dataset_02_params())
+        #self.make_dataset_including_file(self.get_sample_dataset_02_params())
 
         #self.make_dataverse_from_dict(self.get_test_dataverse_params('Eat Boutique'))
-        #self.start_adding_new_data_including_files(self.get_sample_dataset_01_params())
+        #self.make_dataset_including_file(self.get_sample_dataset_01_params())
         return
         for x in range(1, 100):
             msgn('---- start_process ----')
@@ -128,6 +133,55 @@ class BrowseTester:
         """
         has_expected_name(self.sdriver, self.expected_name)
         return True
+
+
+    def get_test_song_dataset_params(self):
+        """
+        Pull random row from song list
+        """
+        fname = join('input', 'top3000-song-list.csv')
+        assert isfile(fname), 'Input file not found: %s' % fname
+
+        cline = random.choice(open(fname, 'rU').readlines())
+        citems = [unicode(x.strip()) for x in cline.split(',')]
+
+        print len(citems)
+        position, artist, song_name, year = citems[:4]
+
+        # title, description, contact
+        title = '%s %s (%s)' % (song_name, artist, year)
+        description = '%s by %s in %s' % (song_name, artist, year)
+        datasetContact = '%s@%s.com' % (slugify(song_name), slugify(artist))
+
+        # output file
+        upload_file_path = abspath(join('input', '%s.txt' % slugify(title)))
+        fh = open(upload_file_path, 'w')
+        fh.write(description)
+        fh.close()
+
+        return dict(title=song_name,
+                     author=artist,
+                     datasetContact=datasetContact,
+                     dsDescription=description,
+                     upload_file_path=upload_file_path,
+                    )
+
+    def get_test_animal_dv_params(self):
+        fname = join('input', 'list_of_endangered_species_of_mammals_and_birds-1252j.csv')
+        assert isfile(fname), 'Input file not found: %s' % fname
+
+        cline = random.choice(open(fname, 'rU').readlines())
+        citems = [unicode(x.strip()) for x in cline.split(',')]
+        id, name, scientific_name, home_range = citems[:4]
+
+        dv_name = name
+        alias = slugify(dv_name)
+        return dict(name=dv_name,
+                alias=alias,
+                description='%s. Endangered species.  Range: %s' % (scientific_name, home_range),
+                category='RESEARCH_PROJECTS',
+                contact_email='info@%s.dot' % alias
+                )
 
     def get_test_car_dv_params(self):
         fname = join('input', 'carlist.csv')
@@ -210,15 +264,30 @@ class BrowseTester:
                     , upload_file_path=abspath(join('input', 'meditation-gray-matter-rebuild.pdf'))
                     )
 
-    def start_adding_new_data_including_files(self, dataset_params):
+    def remove_file(self, fname):
+        if isfile(fname):
+            os.remove(fname)
+            msg('file deleted: %s' % fname)
+
+    def make_dataset_including_file(self, dataset_params, delete_file=False):
         msg('Add new dataset')
         assert self.sdriver is not None, "self.sdriver cannot be None"
 
-        d = self.sdriver
-        d.find_link_in_soup_and_click('New Dataset')
+        if not self.sdriver.get_button_by_name_and_click('Add Data'):
+            msg('Could not find "Add Data" button')
+            if delete_file:  self.remove_file(dataset_params['upload_file_path'])
+            return False
+
+        if not self.sdriver.find_link_by_text_click('New Dataset'):
+            msg('Could not find "New Dataset" link')
+            if delete_file:  self.remove_file(dataset_params['upload_file_path'])
+            return False
+
 
         pause_script(5)
         self.check_name()
+
+        d = self.sdriver
 
         # try to add title
         # find <a rel="title" class="pre-input-tag"></a>
@@ -262,6 +331,10 @@ class BrowseTester:
         pause_script(10)
         self.check_name()
       #d.find_by_id_click('datasetForm:cancelCreate')
+        if delete_file:
+            if isfile(dataset_params['upload_file_path']):
+                os.remove(dataset_params['upload_file_path'])
+                msg('file deleted: %s' % dataset_params['upload_file_path'])
 
         publish_dataset(self.sdriver)
         pause_script()
@@ -284,7 +357,7 @@ def run_as_user(dataverse_url, auth, expected_name):
 
     tester = BrowseTester(dataverse_url, auth, expected_name=expected_name)
 
-    tester.run_routine2(7)
+    tester.run_routine2(700)
     #tester.start_process()  # make dataverse, publish it; make data set, publish it
 
     # workon publish

@@ -2,6 +2,7 @@ from datetime import datetime
 import time
 from os.path import realpath, dirname, join, isdir
 import os
+import string
 from random import randint, choice
 from collections import OrderedDict
 
@@ -171,7 +172,22 @@ def edit_account_information(selenium_helper):
         msg('Failed to set new position of "%s"' % new_position)
         return False
 
+    #----------------------------
+    # Set random email
+    #----------------------------
+    random_email_name = "".join([choice(string.ascii_lowercase + string.digits) for i in range(9)])
+    random_email_org = "".join([choice(string.ascii_lowercase) for i in range(7)])
+    random_email_ext = choice(['com', 'edu', 'co',  'org', 'info'])
+    random_email_ext = 'info'
+    new_email = '%s@%s.%s' % (random_email_name, random_email_org, random_email_ext)
+    if not selenium_helper.find_by_id_send_keys('dataverseUserForm:accountInfoView:email',
+                                                 new_email):
+        msg('Failed to set new email of "%s"' % new_email)
+        return False
+
+    #----------------------------
     # Click Save
+    #----------------------------
     if not selenium_helper.find_by_id_click("dataverseUserForm:accountInfoView:save"):
         msg('Failed to click element with id "dataverseUserForm:accountInfoView:save"')
         return False
@@ -197,20 +213,38 @@ def edit_theme(selenium_helper):
         return False
     pause_script()
 
-    # Click background color button
-    #if not selenium_helper.find_by_id_click('themeWidgetsForm:themeWidgetsTabView:backgroundColor_button'):
-    #    msg('Failed to click "Background Color" button')
-    #    return False
+    new_colors = """#FF0000 #FFFFFF #00FFFF #C0C0C0 #0000FF #808080 #0000A0 #000000 #ADD8E6 #FFA500 #800080 #A52A2A #FFFF00 #800000 #00FF00 #008000 #FF00FF #808000""".split()
+    new_colors = [x[1:] for x in new_colors]    # remove leading '#'
 
-    # Set color via hidden form field
+    # -------------------------------------
+    # Set link color via hidden form field
+    # -------------------------------------
+    id_linkcolor = 'themeWidgetsForm:themeWidgetsTabView:linkColor_input'
+    new_color = choice(new_colors)
+    if not selenium_helper.find_hidden_input_and_enter_text(id_linkcolor, new_color):
+        msg('Failed to set link color')
+        return False
+    msg('Set new link color to %s' % new_color)
+
+    # -------------------------------------
+    # Set text color via hidden form field
+    # -------------------------------------
+    id_textcolor = 'themeWidgetsForm:themeWidgetsTabView:textColor_input'
+    new_color = choice(new_colors)
+    if not selenium_helper.find_hidden_input_and_enter_text(id_textcolor, new_color):
+        msg('Failed to set text color')
+        return False
+    msg('Set new background color to %s' % new_color)
+
+
+    # -------------------------------------
+    # Set background color via hidden form field
+    # -------------------------------------
     id_bgcolor = 'themeWidgetsForm:themeWidgetsTabView:backgroundColor_input'
-    #if not selenium_helper.unhide_element_by_id(id_bgcolor):
-    #    msg('Failed to unhide color field')
-    #    return False
 
-    new_color = choice("""ffcc00 ff0000 006699 A00000 99FF33 CCFF99 336666""".split())
+    new_color = choice(new_colors)
     if not selenium_helper.find_hidden_input_and_enter_text(id_bgcolor, new_color):
-        msg('Failed to set color')
+        msg('Failed to set background color')
         return False
     msg('Set new background color to %s' % new_color)
 

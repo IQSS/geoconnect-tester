@@ -184,6 +184,9 @@ class SeleniumHelper:
         except selenium.common.exceptions.NoSuchElementException:
             msgt('Error: Could not find element by link text: %s' % link_text)
             return False
+        except Exception, ex:
+            msgt('Error: Could not find element by link text: %s' % str(ex))
+            return False
             
         if e: e.click()
         return True
@@ -201,7 +204,10 @@ class SeleniumHelper:
         except selenium.common.exceptions.NoSuchElementException:
             msgt('Error: Could not find element by id: %s' % id_val)
             return False
-            
+        except Exception, ex:
+            msgt('Error: Could not find element by link text: %s' % str(ex))
+            return False
+
         if e: e.click()
         return True
         
