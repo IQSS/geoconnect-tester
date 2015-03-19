@@ -4,9 +4,14 @@ from collections import OrderedDict
 from selenium_dataverse_specs import DataverseInfoChecker
 from datetime import datetime
 import time
+from os.path import realpath, dirname, join, isdir
 import os
+from random import randint
 
 
+OUTPUT_DIR = join(realpath(dirname(dirname(__file__))), 'output')
+if not isdir(OUTPUT_DIR):
+    os.makedirs(OUTPUT_DIR)
 
 def pause_script(num_seconds=2):
     """
@@ -102,7 +107,22 @@ def logout_user(selenium_helper):
 
 
 def publish_dataset(selenium_helper):
-    
+
+    # Retrieve the tag elements
+    for t in selenium_helper.get_elements_by_tag_name('a'):
+        if t.text=='Publish':
+            t.click()
+
+    l2 = selenium_helper.get_elements_by_tag_name('button')
+    for b in l2:
+        if b.text=='Yes, Publish Both':
+            b.click()
+        elif b.text== 'Continue':
+            b.click()
+
+    '''
+    for t in d.find_elements(By.TAG_NAME, 'a'):
+...   if t.text=='Publish': print 'found it'; t.click()
     # retrieve the button elements
     #
     l = selenium_helper.get_elements_by_tag_name('button')
@@ -120,18 +140,32 @@ def publish_dataset(selenium_helper):
     if publish_button_found is False:
         msgt('Failed to find publish button!')
         return
-        
+
     # click "continue" on confirmation dialog
     #
     l2 = selenium_helper.get_elements_by_tag_name('button')
     for b in l2:
         if b.text == 'Continue':
             b.click()
+    '''
 
-    
-    
+
 def publish_dataverse(selenium_helper):
 
+    # Retrieve the tag elements
+    for t in selenium_helper.get_elements_by_tag_name('a'):
+        if t.text=='Publish':
+            t.click()
+
+    l2 = selenium_helper.get_elements_by_tag_name('button')
+    for b in l2:
+        if b.text=='Yes, Publish Both':
+            b.click()
+        elif b.text== 'Continue':
+            b.click()
+
+    # Deprecated UI below
+    '''
     # retrieve the button elements
     #
     l = selenium_helper.get_elements_by_tag_name('button')
@@ -148,7 +182,7 @@ def publish_dataverse(selenium_helper):
     for b in l2:
         if b.text == 'Continue':
             b.click()
-
+    '''
 
 def goto_home(selenium_helper):
     """
@@ -173,7 +207,9 @@ def has_expected_name(selenium_helper, expected_name):
     assert  isinstance(selenium_helper, SeleniumHelper), "selenium_helper must be a SeleniumHelper object"
 
     page_source = selenium_helper.get_page_source()
-    search_str = '">%s' %  (expected_name)
+
+    #search_str = 'class="text-danger">%s</span>' %  (expected_name)
+    search_str = '>%s' %  (expected_name)
     msgt('check for: [%s]' % search_str)
     if page_source.find(search_str) == -1:
         msg('!' * 200)
@@ -184,7 +220,7 @@ def has_expected_name(selenium_helper, expected_name):
         fname = 'not_logged_in-%s.html' % datetime.fromtimestamp(\
                                                     thetime\
                                             ).strftime("%Y-%m-%d_%H%M-%S")
-        fname = os.path.join('bad_html_pages', fname)
+        fname = join(OUTPUT_DIR, fname)
         open(fname, 'w').write(page_source.encode('utf-8'))
         msgt('Bad html file written: %s' % fname)
         msgt('pause for 5 minutes!')
@@ -231,16 +267,37 @@ def make_dataverse(selenium_helper, dv_info):
 
     # subject (checkbox)
     sh.find_by_id_click("dataverseForm:subject:0")  # arts
-    sh.find_by_id_click("dataverseForm:subject:2")  # business  
-    
+    sh.find_by_id_click("dataverseForm:subject:2")  # business
+
     #<input id="dataverseForm:subject:0" type="checkbox" value="2" name="dataverseForm:subject">
-    
+
     # save
     sh.find_by_id_click('dataverseForm:save')
 
     # pause
     pause_script()
 
+
+def goto_random_dvobject(selenium_helper):
+    assert isinstance(selenium_helper, SeleniumHelper), "selenium_helper must be a SeleniumHelper object"
+
+    # -------------------------
+    # Go Home
+    # -------------------------
+    goto_home(selenium_helper)
+    pause_script()
+
+    # -------------------------
+    # Goto random link
+    # -------------------------
+    available_links = selenium_helper.get_dvobject_links()
+    if len(available_links) > 0:
+        random_idx = randint(0, len(available_links)-1)
+        msgt('go to random page: %s' % available_links[random_idx])
+        selenium_helper.goto_link(available_links[random_idx])
+        pause_script()
+    else:
+        msg('no available links...')
 
 
 

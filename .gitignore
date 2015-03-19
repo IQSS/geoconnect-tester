@@ -1,4 +1,6 @@
 tabular-api/code/server_creds.json
+geoconnect_tester/csvkit*
+weld_test/output/*
 tabular-api/input/*
 # Byte-compiled / optimized / DLL files
 __pycache__/

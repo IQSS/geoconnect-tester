@@ -13,7 +13,8 @@ from selenium_utils.selenium_dv_actions import pause_script, login_user, logout_
                         goto_home, make_dataverse, goto_dataverse_by_alias,\
                         publish_dataverse, publish_dataset,\
                         delete_dataverse_by_alias,\
-                        does_dataverse_exist
+                        does_dataverse_exist,\
+                        goto_random_dvobject
 
 
 class LoadShapefileTester:
@@ -48,6 +49,7 @@ class LoadShapefileTester:
 
         if parent_dataverse_alias is not None:
             goto_dataverse_by_alias(self.sdriver, parent_dataverse_alias)
+            self.check_name()
 
         current_dataverse_alias = dv_dict.get('alias')
 
@@ -59,11 +61,14 @@ class LoadShapefileTester:
             else:
                 goto_home(self.sdriver)
             pause_script()
+            self.check_name()
 
             make_dataverse(self.sdriver, dv_dict)
             pause_script()
+            self.check_name()
             publish_dataverse(self.sdriver)
             pause_script()
+            self.check_name()
 
     def start_process(self):
     
@@ -71,9 +76,14 @@ class LoadShapefileTester:
         #self.start_adding_new_data_including_files(self.get_sample_dataset_02_params())
 
         self.make_dataverse_from_dict(self.get_test_dataverse_params('Eat Boutique'))
-        self.start_adding_new_data_including_files(self.get_sample_dataset_01_params())
+        #self.start_adding_new_data_including_files(self.get_sample_dataset_01_params())
 
-        
+        for x in range(1, 100):
+            msgn('---- start_process ----')
+            goto_random_dvobject(self.sdriver)
+            self.check_name()
+            pause_script(1)
+
         #delete_dataverse_by_alias(self.sdriver, 'shapefile-test')
     
     def get_sample_dataset_01_params(self):
@@ -93,23 +103,25 @@ class LoadShapefileTester:
                     )
 
     def start_adding_new_data_including_files(self, dataset_params):
-          msg('Add new dataset')
-          assert self.sdriver is not None, "self.sdriver cannot be None"
+        msg('Add new dataset')
+        assert self.sdriver is not None, "self.sdriver cannot be None"
 
-          d = self.sdriver
-          d.find_link_in_soup_and_click('New Dataset')
+        d = self.sdriver
+        d.find_link_in_soup_and_click('New Dataset')
 
-          pause_script(5)
+        pause_script(5)
+        self.check_name()
+
           # try to add title
           # find <a rel="title" class="pre-input-tag"></a>
-          prefix = 'pre-input-'
-          #d.find_input_box_and_fill('%stitle' % prefix, 'Lily, Rosemary, and the Jack of Hearts')
-          d.find_input_box_and_fill('%stitle' % prefix, dataset_params['title'])
-          d.find_input_box_and_fill('%sauthor' % prefix, dataset_params['author'])
-          d.find_input_box_and_fill('%sdatasetContact' % prefix, dataset_params['datasetContact'])
-          d.find_input_box_and_fill('%sdsDescription' % prefix, dataset_params['dsDescription'], input_type='textarea')
+        prefix = 'pre-input-'
+        #d.find_input_box_and_fill('%stitle' % prefix, 'Lily, Rosemary, and the Jack of Hearts')
+        d.find_input_box_and_fill('%stitle' % prefix, dataset_params['title'])
+        d.find_input_box_and_fill('%sauthor' % prefix, dataset_params['author'])
+        d.find_input_box_and_fill('%sdatasetContact' % prefix, dataset_params['datasetContact'])
+        d.find_input_box_and_fill('%sdsDescription' % prefix, dataset_params['dsDescription'], input_type='textarea')
 
-          d.find_input_box_and_fill('%snotesText' % prefix\
+        d.find_input_box_and_fill('%snotesText' % prefix\
                             , """The festival was over and the boys were all planning for a fall
           The cabaret was quiet except for the drilling in the wall
           The curfew had been lifted and the gambling wheel shut down
@@ -118,37 +130,39 @@ class LoadShapefileTester:
                             , input_type='textarea'\
                             )
 
-          # Chemistry checkbox
-          print 'try to find chem'
-          elem_list = d.driver.find_elements_by_xpath("//*[contains(text(), 'Chemistry')]")
-          print 'found it?', elem_list, len(elem_list)
-          for entry in elem_list: 
-              print entry
-              entry.click()
+        # Chemistry checkbox
+        print 'try to find chem'
+        elem_list = d.driver.find_elements_by_xpath("//*[contains(text(), 'Chemistry')]")
+        print 'found it?', elem_list, len(elem_list)
+        for entry in elem_list:
+            print entry
+            entry.click()
           
-          file_upload_element = d.driver.find_element_by_id('datasetForm:tabView:fileUpload_input')
+        file_upload_element = d.driver.find_element_by_id('datasetForm:tabView:fileUpload_input')
           
-          # send a file over
-         # fpath = abspath(join('input', 'social_disorder_in_boston_yqh.zip'))
-          file_upload_element.send_keys(dataset_params['upload_file_path'])
+        # send a file over
+        # fpath = abspath(join('input', 'social_disorder_in_boston_yqh.zip'))
+        file_upload_element.send_keys(dataset_params['upload_file_path'])
 
-          # send another file over
-          #fpath2 = abspath(join('input', 'meditation-gray-matter-rebuild.pdf'))          
-          #file_upload_element.send_keys(fpath2)
-          pause_script(7)
+        # send another file over
+        #fpath2 = abspath(join('input', 'meditation-gray-matter-rebuild.pdf'))
+        #file_upload_element.send_keys(fpath2)
+        pause_script(7)
+        self.check_name()
           
-          
-          d.find_by_id_click("datasetForm:save")
-          #d.find_by_id_click('datasetForm:cancelCreate')
-          pause_script(10)
+        d.find_by_id_click("datasetForm:save")
+        pause_script(10)
+        self.check_name()
+      #d.find_by_id_click('datasetForm:cancelCreate')
 
-          publish_dataset(self.sdriver)
+        publish_dataset(self.sdriver)
+        pause_script()
+        self.check_name()
 
-          pause_script()
 
     def login(self):
         login_user(self.sdriver, self.dv_url, self.auth[0], self.auth[1])
-
+        pause_script(5)
         self.check_name()
 
     def delete_dataverses(self):
