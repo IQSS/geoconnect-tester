@@ -383,7 +383,7 @@ def make_dataverse(selenium_helper, dv_info):
     sh.find_by_id_click('dataverseForm:save')
 
     # pause
-    pause_script()
+    pause_script(3)
 
 
 def goto_random_dvobject(selenium_helper):

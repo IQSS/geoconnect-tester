@@ -80,14 +80,18 @@ class BrowseTester:
             #else:
             do_delete = True
 
-            self.make_dataverse_from_dict(self.get_test_car_dv_params(),
-                                        publish_it=True)
+            self.make_dataverse_from_dict(self.get_test_car_dv_params())
+                                        #publish_it=True)
                                         #delete_it=do_delete)
 
             edit_theme(self.sdriver)
 
             if random.randint(1,2) == 1:
                 delete_current_dataverse(self.sdriver)
+
+            if random.randint(1,2) == 1:
+                publish_dataverse(self.sdriver)
+
 
             # (3) Ever 4th loop, login and logout
             if x > 1 and (x % 4 == 0):
