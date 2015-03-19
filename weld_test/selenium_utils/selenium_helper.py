@@ -110,12 +110,25 @@ class SeleniumHelper:
         
         return True
             
-        
+
+    def get_button_by_name_and_click(self, btn_text, btn_text2=None):
+        assert self.driver is not None, 'self.sdriver cannot be None'
+        assert btn_text is not None, 'btn_text cannot be None'
+
+        for e in self.driver.find_elements(By.TAG_NAME, 'button'):
+            if e.text == btn_text:
+                e.click()
+                return True
+            elif btn_text2 is not None and e.text == btn_text2:
+                e.click()
+                return True
+        return False
+
+
     def find_link_by_text_click(self, link_text):
-        print 'find_link_by_text_click: %s' % link_text
-        if self.driver is None or link_text is None:
-            return False
-        
+        assert self.driver is not None, 'self.sdriver cannot be None'
+        assert link_text is not None, 'link_text cannot be None'
+
         e = None
         
         try:

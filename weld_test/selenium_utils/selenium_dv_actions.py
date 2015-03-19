@@ -106,83 +106,87 @@ def logout_user(selenium_helper):
         selenium_helper.find_by_css_selector_and_click("a[id$='lnk_header_logout']")
 
 
+def delete_dataverse_by_alias(selenium_helper, alias):
+    msgt('delete_dataverse_by_alias: %s' % alias)
+    assert isinstance(selenium_helper, SeleniumHelper), "selenium_helper must be a SeleniumHelper object"
+    assert alias is not None, "alias cannot be None"
+
+    #   Note, "does_dataverse_exist" first goes to that page via alias
+    #
+    if does_dataverse_exist(selenium_helper, alias) is False:
+        msg('does not exist')
+        return False
+
+    return delete_current_dataverse(selenium_helper)
+
+def delete_current_dataverse(selenium_helper):
+    """
+    Delete the current dataset
+    """
+    assert isinstance(selenium_helper, SeleniumHelper), "selenium_helper must be a SeleniumHelper object"
+    msgt('delete_current_dataverse')
+
+    # Edit button
+    if not selenium_helper.get_button_by_name_and_click('Edit'):
+        msg('Failed to press "Edit" button')
+        return False
+
+    # Delete Dataverse link
+    if not selenium_helper.find_by_id_click('dataverseForm:deleteDataset'):
+        msg('Failed to click "Delete Dataset" link')
+        return False
+
+    # Continue button
+    if not selenium_helper.get_button_by_name_and_click('Continue'):
+        msg('Failed to press "Continue" button')
+        return False
+
+    msg('done')
+    return True
+
+
+
 def publish_dataset(selenium_helper):
+    """
+    Publish the current dataset
+    """
+    msgt('publish_dataset')
+    assert isinstance(selenium_helper, SeleniumHelper), "selenium_helper must be a SeleniumHelper object"
 
-    # Retrieve the tag elements
-    for t in selenium_helper.get_elements_by_tag_name('a'):
-        if t.text=='Publish':
-            t.click()
-
-    l2 = selenium_helper.get_elements_by_tag_name('button')
-    for b in l2:
-        if b.text=='Yes, Publish Both':
-            b.click()
-        elif b.text== 'Continue':
-            b.click()
-
-    '''
-    for t in d.find_elements(By.TAG_NAME, 'a'):
-...   if t.text=='Publish': print 'found it'; t.click()
-    # retrieve the button elements
+    # Publish button (really a link)
     #
-    l = selenium_helper.get_elements_by_tag_name('button')
+    if not selenium_helper.find_link_by_text_click('Publish'):
+        msg('Failed to find Publish link (that looks like a button')
+        return False
 
-    # click publish dataverse
+    # "Yes, Publish Both" or "Continue" button
     #
-    publish_button_found = False
-    for cnt, b in enumerate(l, start=1):
-        msg('%s: %s' % (cnt, b.text))
-        if b.text == 'Publish Dataset':
-            publish_button_found = True
-            msg('found it')
-            b.click()
+    if not selenium_helper.get_button_by_name_and_click('Yes, Publish Both', 'Continue'):
+        msg('Failed to find "Yes, Publish Both" or "Continue" button')
+        return False
 
-    if publish_button_found is False:
-        msgt('Failed to find publish button!')
-        return
-
-    # click "continue" on confirmation dialog
-    #
-    l2 = selenium_helper.get_elements_by_tag_name('button')
-    for b in l2:
-        if b.text == 'Continue':
-            b.click()
-    '''
+    return True
 
 
 def publish_dataverse(selenium_helper):
+    """
+    Publish the current dataverse
+    """
+    msgt('publish_dataverse')
+    assert isinstance(selenium_helper, SeleniumHelper), "selenium_helper must be a SeleniumHelper object"
 
-    # Retrieve the tag elements
-    for t in selenium_helper.get_elements_by_tag_name('a'):
-        if t.text=='Publish':
-            t.click()
-
-    l2 = selenium_helper.get_elements_by_tag_name('button')
-    for b in l2:
-        if b.text=='Yes, Publish Both':
-            b.click()
-        elif b.text== 'Continue':
-            b.click()
-
-    # Deprecated UI below
-    '''
-    # retrieve the button elements
+    # Publish button (really a link)
     #
-    l = selenium_helper.get_elements_by_tag_name('button')
+    if not selenium_helper.get_button_by_name_and_click('Publish'):
+        msg('Failed to find Publish link (that looks like a buttion')
+        return False
 
-    # click publish dataverse
+    # "Yes, Publish Both" or "Continue" button
     #
-    for b in l:
-        if b.text == 'Publish Dataverse':
-            b.click()
+    if not selenium_helper.get_button_by_name_and_click('Yes, Publish Both', 'Continue'):
+        msg('Failed to find "Yes, Publish Both" or "Continue" button')
+        return False
 
-    # click "continue" on confirmation dialog
-    #
-    l2 = selenium_helper.get_elements_by_tag_name('button')
-    for b in l2:
-        if b.text == 'Continue':
-            b.click()
-    '''
 
 def goto_home(selenium_helper):
     """
