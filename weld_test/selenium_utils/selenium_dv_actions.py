@@ -365,8 +365,8 @@ def has_expected_name(selenium_helper, expected_name):
         fname = join(OUTPUT_DIR, fname)
         open(fname, 'w').write(page_source.encode('utf-8'))
         msgt('Bad html file written: %s' % fname)
-        msgt('pause for 5 minutes!')
-        pause_script(60*5)
+        msgt('pause for 3 minutes!')
+        pause_script(60*3)
     else:
         msg('Still logged in as: %s' % expected_name)
     return True

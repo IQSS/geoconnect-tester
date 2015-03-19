@@ -67,65 +67,73 @@ class BrowseTester:
         #edit_theme(self.sdriver)
 
         msgt('run_routine1 for %s loops' % num_loops)
+        parent_dataverse_alias = None
         for x in range(1, num_loops+1):
             msgt('Loop: %s' % x)
 
+            # -------------------------------
             # (1) Edit account information
-            edit_account_information(self.sdriver)
-            self.check_name()
+            # -------------------------------
+            #edit_account_information(self.sdriver)
+            #self.check_name()
 
+            # -------------------------------
             # (2) Make dataverse from dict
+            # -------------------------------
             if random.randint(1, 4) == 1:
-                self.make_dataverse_from_dict(self.get_test_car_dv_params())
+                dv_params = self.get_test_car_dv_params()
             else:
-                self.make_dataverse_from_dict(self.get_test_animal_dv_params())
+                dv_params = self.get_test_animal_dv_params()
+            self.make_dataverse_from_dict(dv_params, parent_dataverse_alias=parent_dataverse_alias)
+            parent_dataverse_alias = dv_params.get('alias', None)
 
-
-            if random.randint(1,5) == 1:
-                delete_current_dataverse(self.sdriver)
-                pause_script()
-                self.check_name()
-                continue
-
+            # -------------------------------
+            # Edit Dataverse theme
+            # -------------------------------
             edit_theme(self.sdriver)
             self.check_name()
-            if random.randint(1,2) == 1:
+
+            # -------------------------------
+            # Publish Dataverse
+            # -------------------------------
+            if 1:   # random.randint(1,2) == 1:
                 publish_dataverse(self.sdriver)
                 pause_script()
 
-            self.make_dataset_including_file(self.get_test_song_dataset_params(), delete_file=True)
+            # -------------------------------
+            # Delete Dataverse
+            # -------------------------------
+            if False: #if random.randint(1,5) == 1:
+                delete_current_dataverse(self.sdriver)
+                pause_script()
+                self.check_name()
+
+            # -------------------------------
+            # Make/Publish Dataset
+            # -------------------------------
+            self.make_dataset_including_file(self.get_test_song_dataset_params(),
+                                    delete_temp_file=True,
+                                    publish_it=True,
+                                    upload_file_path2=self.get_random_test_filepath()
+                                    )
             pause_script()
             self.check_name()
 
 
-            # (3) Ever 4th loop, login and logout
+            # -------------------------------
+            # Login/Logout: Every 4th loop
+            # -------------------------------
             if x > 1 and (x % 4 == 0):
                 logout_user(self.sdriver)
                 pause_script()
                 self.login()
 
-            # (4) Go to a random link from front page
-            #for x in range(1, 3):
-            #    msgn('Go to 2 random links from front page')
+            # -------------------------------
+            # Got to Random link
+            # -------------------------------
             goto_random_dvobject(self.sdriver)
 
-    def start_process(self):
 
-
-        self.make_dataverse_from_dict(self.get_test_car_dv_params())
-
-        #self.make_dataset_including_file(self.get_sample_dataset_02_params())
-
-        #self.make_dataverse_from_dict(self.get_test_dataverse_params('Eat Boutique'))
-        #self.make_dataset_including_file(self.get_sample_dataset_01_params())
-        return
-        for x in range(1, 100):
-            msgn('---- start_process ----')
-            goto_random_dvobject(self.sdriver)
-            self.check_name()
-            pause_script(1)
-
-        #delete_dataverse_by_alias(self.sdriver, 'shapefile-test')
 
     def check_name(self):
         """
@@ -133,6 +141,40 @@ class BrowseTester:
         """
         has_expected_name(self.sdriver, self.expected_name)
         return True
+
+
+    def get_test_data_file_path(self, fname, content):
+        """
+        Create a test file and return its path
+        """
+        assert fname is not None, 'fname cannot be None'
+        assert content is not None, 'content cannot be None'
+
+        upload_file_path = abspath(join('input', fname))
+        fh = open(upload_file_path, 'w')
+        fh.write(content)
+        fh.close()
+
+        return upload_file_path
+
+
+    def get_random_test_filepath(self):
+        """
+        Pull random row from song list
+        """
+        fname = join('input', 'top3000-song-list.csv')
+        assert isfile(fname), 'Input file not found: %s' % fname
+
+        cline = random.choice(open(fname, 'rU').readlines())
+        citems = [unicode(x.strip().replace('"', '')) for x in cline.split(',')]
+
+        position, artist, song_name, year = citems[:4]
+
+        # title, description, contact
+        title = '%s %s (%s)' % (song_name, artist, year)
+        description = '%s by %s in %s' % (song_name, artist, year)
+
+        return self.get_test_data_file_path('%s.txt' % slugify(title), description)
 
 
     def get_test_song_dataset_params(self):
@@ -143,7 +185,7 @@ class BrowseTester:
         assert isfile(fname), 'Input file not found: %s' % fname
 
         cline = random.choice(open(fname, 'rU').readlines())
-        citems = [unicode(x.strip()) for x in cline.split(',')]
+        citems = [unicode(x.strip().replace('"', '')) for x in cline.split(',')]
 
         print len(citems)
         position, artist, song_name, year = citems[:4]
@@ -153,11 +195,7 @@ class BrowseTester:
         description = '%s by %s in %s' % (song_name, artist, year)
         datasetContact = '%s@%s.com' % (slugify(song_name), slugify(artist))
 
-        # output file
-        upload_file_path = abspath(join('input', '%s.txt' % slugify(title)))
-        fh = open(upload_file_path, 'w')
-        fh.write(description)
-        fh.close()
+        upload_file_path = self.get_test_data_file_path('%s.txt' % slugify(title), description)
 
         return dict(title=song_name,
                      author=artist,
@@ -269,35 +307,63 @@ class BrowseTester:
             os.remove(fname)
             msg('file deleted: %s' % fname)
 
-    def make_dataset_including_file(self, dataset_params, delete_file=False):
+    def make_dataset_including_file(self, dataset_params, **kwargs):
         msg('Add new dataset')
         assert self.sdriver is not None, "self.sdriver cannot be None"
 
+        delete_temp_file = kwargs.get('delete_temp_file', False)
+        publish_it = kwargs.get('publish_it', False)
+        upload_file_path2 = kwargs.get('upload_file_path2', False)
+        if upload_file_path2:
+            assert isfile(upload_file_path2), "File not found: %s" % upload_file_path2
+
+        # -------------------------------
+        # Click Add Data
+        # -------------------------------
         if not self.sdriver.get_button_by_name_and_click('Add Data'):
             msg('Could not find "Add Data" button')
-            if delete_file:  self.remove_file(dataset_params['upload_file_path'])
+            if delete_temp_file:
+                self.remove_file(dataset_params['upload_file_path'])
+                if upload_file_path2: self.remove_file(upload_file_path2)
             return False
 
+        # -------------------------------
+        # Click New Dataset
+        # -------------------------------
         if not self.sdriver.find_link_by_text_click('New Dataset'):
             msg('Could not find "New Dataset" link')
-            if delete_file:  self.remove_file(dataset_params['upload_file_path'])
+            if delete_temp_file:
+                self.remove_file(dataset_params['upload_file_path'])
+                if upload_file_path2: self.remove_file(upload_file_path2)
+
             return False
 
 
         pause_script(5)
         self.check_name()
 
+        # -------------------------------
+        # Add Data
+        # -------------------------------
         d = self.sdriver
 
-        # try to add title
-        # find <a rel="title" class="pre-input-tag"></a>
+        # -------------------------------
+        # Add title
+        #   find <a rel="title" class="pre-input-tag"></a>
+        # -------------------------------
         prefix = 'pre-input-'
-        #d.find_input_box_and_fill('%stitle' % prefix, 'Lily, Rosemary, and the Jack of Hearts')
         d.find_input_box_and_fill('%stitle' % prefix, dataset_params['title'])
+
+        # Author
         d.find_input_box_and_fill('%sauthor' % prefix, dataset_params['author'])
+
+        # Email contact
         d.find_input_box_and_fill('%sdatasetContact' % prefix, dataset_params['datasetContact'])
+
+        # Description
         d.find_input_box_and_fill('%sdsDescription' % prefix, dataset_params['dsDescription'], input_type='textarea')
 
+        # Notes
         d.find_input_box_and_fill('%snotesText' % prefix\
                             , """The festival was over and the boys were all planning for a fall
           The cabaret was quiet except for the drilling in the wall
@@ -315,30 +381,46 @@ class BrowseTester:
             print entry
             entry.click()
 
+        # -------------------------------
+        # Add File(s)
+        # -------------------------------
         file_upload_element = d.driver.find_element_by_id('datasetForm:tabView:fileUpload_input')
 
-        # send a file over
-        # fpath = abspath(join('input', 'social_disorder_in_boston_yqh.zip'))
-        file_upload_element.send_keys(dataset_params['upload_file_path'])
+        if False: # Not working yet. upload_file_path2:
+            # Optional: Add second file
+            two_files_str = '%s,%s' % (dataset_params['upload_file_path'], upload_file_path2)
+            file_upload_element.send_keys(two_files_str)
+        else:
+            # Add 1 file
+            file_upload_element.send_keys(dataset_params['upload_file_path'])
 
-        # send another file over
-        #fpath2 = abspath(join('input', 'meditation-gray-matter-rebuild.pdf'))
-        #file_upload_element.send_keys(fpath2)
+        #    file_upload_element = d.driver.find_element_by_id('datasetForm:tabView:fileUpload_input')
+        #    file_upload_element.send_keys(upload_file_path2)
+
         pause_script(7)
-        self.check_name()
 
+        # -------------------
+        # Save Dataset
+        # -------------------
         d.find_by_id_click("datasetForm:save")
         pause_script(10)
         self.check_name()
-      #d.find_by_id_click('datasetForm:cancelCreate')
-        if delete_file:
-            if isfile(dataset_params['upload_file_path']):
-                os.remove(dataset_params['upload_file_path'])
-                msg('file deleted: %s' % dataset_params['upload_file_path'])
 
-        publish_dataset(self.sdriver)
-        pause_script()
-        self.check_name()
+        # ------------------------
+        # Optional: Delete file from local server
+        # ------------------------
+        if delete_temp_file:
+            self.remove_file(dataset_params['upload_file_path'])
+            if upload_file_path2: self.remove_file(upload_file_path2)
+
+        # ------------------------
+        # Optional: Publish dataset
+        # ------------------------
+        if publish_it:
+            publish_dataset(self.sdriver)
+            pause_script()
+            self.check_name()
+
 
 
     def login(self):
@@ -346,46 +428,28 @@ class BrowseTester:
         pause_script(5)
         self.check_name()
 
-    def delete_dataverses(self):
-        to_delete = """communitystructure agglomerativecluster cluster analytics"""
-        #to_delete = """communitystructure"""
-        for dv_alias in to_delete.split():
-            delete_dataverse_by_alias(self.sdriver, dv_alias)
 
 def run_as_user(dataverse_url, auth, expected_name):
 
 
     tester = BrowseTester(dataverse_url, auth, expected_name=expected_name)
 
-    tester.run_routine2(700)
-    #tester.start_process()  # make dataverse, publish it; make data set, publish it
-
-    # workon publish
-    #tester.sdriver.goto_link('http://localhost:8080/dataset.xhtml?id=35&versionId=10')
-    #publish_dataset(tester.sdriver)
-
-    #tester.delete_dataverses()
-    #
-def run_user_admin(dataverse_url):
-    auth = ('admin', 'admin')
-    run_as_user(dataverse_url, auth, 'Admin Dataverse')
+    tester.run_routine2(100)#(700)
 
 
-def run_user_pete(dataverse_url):
-    auth = ('pete', 'pete')
-    run_as_user(dataverse_url, auth, 'Pete Privileged')
+AUTH_LIST = ( ( 'admin', 'admin', 'Admin Dataverse' ),
+              ( 'js', 'one234', 'Joe Smith' ),
+              ( 'ted', 'teddy123', 'Teddy Roosevelt' ),
+              ( 'rweld', 'weld123', 'R Weld' ),
+              )
 
-def run_random_creds(dataverse_url, selected_username=None):
+def run_with_creds(dataverse_url, selected_username=None):
 
-    # username | pw | Expected name into top right corner
+    global AUTH_LIST
 
-    auth_list = ( ( 'js', 'one234', 'Joe Smith' ),
-                  ( 'ted', 'teddy123', 'Teddy Roosevelt' ),
-                  ( 'rweld', 'weld123', 'R Weld' ),
-                 # ( 'admin', 'admin', 'Admin Dataverse' ),
-                  )
+
     if selected_username is not None:
-        for info in auth_list:
+        for info in AUTH_LIST:
             username, pw, expected_name = info
             if selected_username==username:
                 run_as_user(dataverse_url, (username, pw), expected_name)
@@ -393,43 +457,30 @@ def run_random_creds(dataverse_url, selected_username=None):
         msgx('selected username not found in auth_list: %s' % selected_username)
     else:
         # Random choice
-        username, pw, expected_name = random.choice(auth_list)
+        username, pw, expected_name = random.choice(AUTH_LIST)
         run_as_user(dataverse_url, (username, pw), expected_name)
 
 
 if __name__=='__main__':
     dataverse_url = load_settings_dict()['dataverse_url']
-    #'https://dvn-build.hmdc.harvard.edu/'
-    #dataverse_url = 'https://shibtest.dataverse.org'
-    #dataverse_url = 'http://127.0.0.1:8080'
 
+    user_choices = OrderedDict()
+    for cnt, item in enumerate(AUTH_LIST, 1):
+        user_choices[str(cnt)] = "run_with_creds('%s')" % item[0]
 
-    user_choices = OrderedDict( [
-                      ('1', run_user_admin),
-                      ('2' , run_user_pete),
-                      ('3' , "run_random_creds()"),
-                      ('4' , "run_random_creds('js')"),
-                      ('5' , "run_random_creds('ted')"),
-                      ('6' , "run_random_creds('rweld')"),
-                    ] )
-
+    print 'user_choices', user_choices
     if len(sys.argv) == 2 and sys.argv[1] in user_choices.keys():
         print 'do something'
         chosen_num = int(sys.argv[1])
-        if chosen_num < 3:
-            user_choices[sys.argv[1]](dataverse_url)
-        else:   # with username argument
-            cmd_str = user_choices[sys.argv[1]]
-            cmd_str = cmd_str.replace("(", "(dataverse_url, ")
-            print 'cmd_str', cmd_str
-            eval(cmd_str)
+
+        cmd_str = user_choices[sys.argv[1]]
+        cmd_str = cmd_str.replace("(", "(dataverse_url, ")
+        print 'cmd_str', cmd_str
+        eval(cmd_str)
     else:
         info_lines = []
         for k, v in user_choices.items():
-            if int(k) < 3:
-                info_lines.append(' %s - %s' % (k, v.__name__))
-            else:
-                info_lines.append(' %s - %s' % (k, v))
+            info_lines.append(' %s - %s' % (k, v))
 
         print """
 Please run with one of the choices below:
