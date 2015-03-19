@@ -99,7 +99,7 @@ def logout_user(selenium_helper):
 
     # click account dropdown menu
     #
-    if selenium_helper.find_by_css_selector_and_click("a[id$='lnk_header_account_dropdown']"):
+    if selenium_helper.find_by_css_selector_and_click("span[id$='lnk_header_account_dropdown']"):
         #
         # click logout
         #

@@ -22,6 +22,14 @@ class SeleniumHelper:
         return self.driver.page_source
 
 
+    def set_window_size(self, width, height):
+        assert self.driver is not None, 'self.sdriver cannot be None'
+        self.driver.set_window_size(width, height)
+
+    def set_window_position(self, x, y):
+        assert self.driver is not None, 'self.sdriver cannot be None'
+        self.driver.set_window_position(x, y)
+
     def get_elements_by_tag_name(self, tag_name):
         assert tag_name is not None, "tag_name cannot be None"
 

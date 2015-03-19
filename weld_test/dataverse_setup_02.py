@@ -37,30 +37,50 @@ class BrowseTester:
         """
         assert num_loops > 0, "num_loops must be greater than 0"
 
-        msgt('run_routine1 for %s loops' % num_loops)
-        for x in range(1, num_loops+1):
-            msgt('Loop: %s' % x)
-            self.make_dataverse_from_dict(self.get_test_car_dv_params(), publish_it=True, delete_it=True)
+        self.sdriver.set_window_size(900, 500)
+        self.sdriver.set_window_position(700, 100)
 
-
-    def run_routine1(self, num_loops=1):
-        """
-        - Make random dataverse
-        - Publish it
-        - Delete it
-        """
-        assert num_loops > 0, "num_loops must be greater than 0"
         self.login()
 
         msgt('run_routine1 for %s loops' % num_loops)
         for x in range(1, num_loops+1):
             msgt('Loop: %s' % x)
             self.make_dataverse_from_dict(self.get_test_car_dv_params(), publish_it=True, delete_it=True)
+
+
+    def run_routine2(self, num_loops=1):
+        """
+        - Make random dataverse
+        - Publish it
+        - Delete it
+        """
+        assert num_loops > 0, "num_loops must be greater than 0"
+        self.sdriver.set_window_size(900, 500)
+        self.sdriver.set_window_position(700, 100)
+
+        self.login()
+
+        msgt('run_routine1 for %s loops' % num_loops)
+        for x in range(1, num_loops+1):
+            msgt('Loop: %s' % x)
+
+            if random.randint(1,2) == 1:
+                do_delete = False
+            else:
+                do_delete = True
+
+            self.make_dataverse_from_dict(self.get_test_car_dv_params(),
+                                        publish_it=True,
+                                        delete_it=do_delete)
             # Every 2nd dataset/login and logout
             if x > 1 and (x % 2 == 0):
-                logout_user(selenium_helper)
+                logout_user(self.sdriver)
                 pause_script()
                 self.login()
+
+            for x in range(1, 3):
+                msgn('Go to 2 random links from front page')
+                goto_random_dvobject(self.sdriver)
 
     def start_process(self):
 
@@ -241,7 +261,7 @@ def run_as_user(dataverse_url, auth, expected_name):
 
     tester = BrowseTester(dataverse_url, auth, expected_name=expected_name)
 
-    tester.run_routine1(10)
+    tester.run_routine2(10)
     #tester.start_process()  # make dataverse, publish it; make data set, publish it
 
     # workon publish
@@ -265,6 +285,7 @@ def run_random_creds(dataverse_url, selected_username=None):
 
     auth_list = ( ( 'js', 'one234', 'Joe Smith' ),
                   ( 'ted', 'teddy123', 'Teddy Roosevelt' ),
+                  ( 'rweld', 'weld123', 'R Weld' ),
                  # ( 'admin', 'admin', 'Admin Dataverse' ),
                   )
     if selected_username is not None:
@@ -293,6 +314,7 @@ if __name__=='__main__':
                       ('3' , "run_random_creds()"),
                       ('4' , "run_random_creds('js')"),
                       ('5' , "run_random_creds('ted')"),
+                      ('6' , "run_random_creds('rweld')"),
                     ] )
 
     if len(sys.argv) == 2 and sys.argv[1] in user_choices.keys():
