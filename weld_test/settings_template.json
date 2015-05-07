@@ -1,5 +1,5 @@
 { 
-    "DATAVERSE_URL" : "https://dvn-build.hmdc.harvard.edu/",
+    "DATAVERSE_URL" : "http://127.0.0.1:8080/",
     "VALID_USERNAME_01" : "admin",
     "VALID_PASSWORD_01" : "admin",
     "VALID_USER_DISPLAYNAME_01" : "Dataverse Admin"

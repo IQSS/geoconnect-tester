@@ -35,7 +35,7 @@ class UserLogin(unittest.TestCase):
         msgt('She clicks "Log In" with no credentials -> Error Message')
         # --------------------------------------
         self.driver.find_by_id_click('loginForm:login')
-        self.driver.sleep(2)
+        self.driver.sleep(3)
         self.assertIn('The username and/or password you entered is invalid.', self.driver.get_page_source())
         self.assertIn('Please enter a Username', self.driver.get_page_source())
         self.assertIn('Please enter a Password', self.driver.get_page_source())
@@ -47,7 +47,7 @@ class UserLogin(unittest.TestCase):
         self.driver.find_by_id_send_keys('loginForm:credentialsContainer2:0:credValue', 'edith')
         self.driver.find_by_id_send_keys('loginForm:credentialsContainer2:1:sCredValue', 'wharton')
         self.driver.find_by_id_click('loginForm:login')
-        self.driver.sleep(2)
+        self.driver.sleep(3)
         self.assertIn('The username and/or password you entered is invalid.', self.driver.get_page_source())
 
 
@@ -57,8 +57,7 @@ class UserLogin(unittest.TestCase):
         self.driver.find_by_id_send_keys('loginForm:credentialsContainer2:0:credValue', get_setting('VALID_USERNAME_01'))
         self.driver.find_by_id_send_keys('loginForm:credentialsContainer2:1:sCredValue', get_setting('VALID_PASSWORD_01'))
         self.driver.find_by_id_click('loginForm:login')
-        self.driver.sleep(4)
-
+        self.driver.sleep(5)
         user_display_element = self.driver.browser().find_element_by_id('userDisplayInfoTitle')
         user_name = user_display_element.text
         self.assertIn(user_name, get_setting('VALID_USER_DISPLAYNAME_01'))
