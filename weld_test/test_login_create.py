@@ -20,7 +20,7 @@ class UserLogin(unittest.TestCase):
         # --------------------------------------
         msgt('User decides to check out the homepage')
         # --------------------------------------
-        self.driver.browser().get(get_setting('dataverse_url'))#'http://localhost:8000')
+        self.driver.browser().get(get_setting('DATAVERSE_URL'))#'http://localhost:8000')
         self.driver.wait(3)
         self.assertIn('Dataverse', self.driver.get_page_title())
 

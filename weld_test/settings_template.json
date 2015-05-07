@@ -1,5 +1,5 @@
 { 
-    "dataverse_url" : "https://dvn-build.hmdc.harvard.edu/",
+    "DATAVERSE_URL" : "https://dvn-build.hmdc.harvard.edu/",
     "VALID_USERNAME_01" : "admin",
     "VALID_PASSWORD_01" : "admin",
     "VALID_USER_DISPLAYNAME_01" : "Dataverse Admin"

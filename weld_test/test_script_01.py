@@ -464,7 +464,7 @@ def run_with_creds(dataverse_url, selected_username=None):
 
 
 if __name__=='__main__':
-    dataverse_url = load_settings_dict()['dataverse_url']
+    dataverse_url = load_settings_dict()['DATAVERSE_URL']
 
     user_choices = OrderedDict()
     for cnt, item in enumerate(AUTH_LIST, 1):
