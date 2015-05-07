@@ -1,6 +1,6 @@
 { 
     "dataverse_url" : "https://dvn-build.hmdc.harvard.edu/",
-    "GEOCONNECT_TOKEN_VALUE" : "fake-token-fc6593c38f16c4",
-    "WORLDMAP_SERVER" : "http://107.22.231.227/",
-    "WORLDMAP_TOKEN_VALUE" : "some-token-value"
+    "VALID_USERNAME_01" : "admin",
+    "VALID_PASSWORD_01" : "admin",
+    "VALID_USER_DISPLAYNAME_01" : "Dataverse Admin"
 }
