@@ -9,14 +9,14 @@ def upload_boston_income_csv():
 
     # Upload CSV
     title = 'Boston Income'
-    fname_to_upload = join(INPUT_DIR, 'boston_income_73g.csv')
+    fname_to_upload = join(INPUT_DIR, 'ok_there2.csv')
     
     #fname_to_upload = join(INPUT_DIR, 'boston_income_73g-1-row.csv')
     #fname_to_upload = join(INPUT_DIR, '2-ma-counties.csv')
     #fname_to_upload = join(INPUT_DIR, '2-ca-measures.csv')
     
-    tr.upload_csv_file(title, fname_to_upload)
-
+    res = tr.upload_csv_file(title, fname_to_upload)
+    
     # boston_income_73g
 
 def upload_boston_cenus_csv():
@@ -69,19 +69,63 @@ def join_boston_income():
     # geonode:tl_2014_25_tract
      
     join_props = {
-        'layer_typename' : 'geonode:tl_2014_25_tract',  # underlying layer (orig shp)
+        #geonode:ma_census_91p
+        'layer_typename' : 'geonode:ma_tigerlines_iif',  # underlying layer (orig shp)
         'layer_attribute': 'TRACTCE', # underlying layer - attribute
-        'table_name': 'boston_income_73g_lopalxy', # data table (orig csv)
+        'table_name': 'ok_there2_72', # data table (orig csv)
         'table_attribute': 'tract', # data table - attribute
         #'table_name': 'boston_income_73g_1_row_yhahhul', # data table (orig csv)
     }
-   
    
     tr = TabularTest()
     tr.login_for_cookie()
     tr.join_datatable_to_layer(join_props)
     
+def upload_lat_lng():
+
+    #fname_to_upload = join(INPUT_DIR, 'nhcrime_02_short.csv')
+    fname_to_upload = join(INPUT_DIR, 'nhcrime_2014_08.csv')
     
+    params = {
+        'title' : 'New Haven Crime 2',  
+        'abstract' : 'What a wonderful life...',      
+        'lat_attribute': 'Lat',
+        'lng_attribute': 'Lng',
+    }
+
+    tr = TabularTest()
+    tr.login_for_cookie()
+
+    res = tr.upload_table_with_lat_lng(params, fname_to_upload)
+
+def upload_and_join_boston_income():
+
+    fname_to_upload = join(INPUT_DIR, 'ok_there2.csv')
+    
+    params = {
+        'title' : 'Boston Income',
+        'layer_typename' : 'geonode:ma_tigerlines_lqd',  # underlying layer (orig shp)
+        'layer_attribute': 'TRACTCE', # underlying layer - attribute
+        'table_attribute': 'tract', # data table - attribute
+    }
+
+    tr = TabularTest()
+    tr.login_for_cookie()
+
+    res = tr.upload_datatable_and_join_to_layer(params, fname_to_upload)
+
+
+"""
+# datatable detail
+http://127.0.0.1:8000/datatables/api/47/
+# join detail
+http://127.0.0.1:8000/datatables/api/join/38
+http://127.0.0.1:8000/datatables/api/join/38/remove
+
+http://127.0.0.1:8000/datatables/api/jointargets/
+http://127.0.0.1:8000/datatables/api/jointargets/?type=census
+
+"""
 if __name__=='__main__':
     
     #-----------------------------
@@ -96,7 +140,8 @@ if __name__=='__main__':
     #upload_boston_income_csv()
     
     # (3) Try table join
-    join_boston_income()
-    
+    #join_boston_income()
+    #upload_lat_lng()
+    upload_and_join_boston_income()
     
     

@@ -8,6 +8,23 @@ from tabular_test import TabularTest, INPUT_DIR
 #figsize(15, 5)
 
 
+def check_csv(fname):
+    print 'ok'
+    
+    df = pd.read_csv(fname, nrows=1000,  dtype={'TRACT': '|S6',})  
+   
+    msg(df.dtypes)
+    msg(list(df.columns.values))
+    #msg(df.describe())
+    
+    #df.TRACT.astype(str)
+     
+    df['TRACT'] = df['TRACT'].map(lambda x: '%s' % str(x).zfill(6))
+
+    #print df['TRACTCE_formatted']
+    print df['TRACT']
+
+    df.to_csv('../input/ok_there2.csv')
 
 def load_dataframe(fname):
     msgt('Loading dataframe: %s' % fname)
@@ -23,6 +40,10 @@ def load_dataframe(fname):
 
 
 if __name__ == '__main__':
+    
+    check_csv('../input/boston_income.csv')
+
+if False:
     #df_income = load_dataframe('boston_income_73g.csv')    # TRACT
     df_income = load_dataframe('boston_income_73g-1-row.csv')    # TRACT
     df_census = load_dataframe('tl_2014_25_tract.csv')  # TRACTCE

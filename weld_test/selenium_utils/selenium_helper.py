@@ -11,6 +11,9 @@ class SeleniumHelper:
     def __init__(self):
         self.driver = webdriver.Firefox()
 
+    def browser(self):
+        return self.driver
+
     def quit(self):
         if self.driver:
             self.driver.quit()
@@ -20,6 +23,13 @@ class SeleniumHelper:
             return None
         
         return self.driver.page_source
+
+
+    def get_page_title(self):
+        if not self.driver:
+            return None
+
+        return self.browser().title
 
 
     def set_window_size(self, width, height):
@@ -127,11 +137,15 @@ class SeleniumHelper:
     def goto_link(self, lnk):
         msg('goto link: %s' % lnk)
         self.driver.execute_script('document.location="%s";return true;' % lnk)
-        
+
+
+    def wait(self, seconds):
+        self.driver.implicitly_wait(seconds)
+
     def sleep(self, seconds):
         msg('\n...sleep for %s second(s)...' % seconds)
         time.sleep(seconds)
-        
+
     def get(self, lnk):
         self.driver.get(lnk)
         

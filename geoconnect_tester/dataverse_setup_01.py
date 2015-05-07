@@ -173,7 +173,7 @@ def run_as_user(dataverse_url, auth, expected_name):
     #
 def run_user_admin(dataverse_url):
     auth = ('admin', 'admin')
-    run_as_user(dataverse_url, auth, 'Admin Dataverse')
+    run_as_user(dataverse_url, auth, 'Dataverse Admin')
 
 
 def run_user_pete(dataverse_url):

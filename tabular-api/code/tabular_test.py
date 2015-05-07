@@ -83,7 +83,7 @@ class TabularTest:
         print response.text
         print response.status_code
         resp_dict = json.loads(response.content)
-        datatable_name = resp_dict['datatable_name']
+        datatable_name = resp_dict['data']['datatable_name']
         print datatable_name
         return
 
@@ -151,14 +151,15 @@ class TabularTest:
 
             params = {
                 'title' : 'boston income'
-                'lat_column': 'GEO.id2',
-                'lon_column': 'geonode:tl_2013_06_tract',
+                'abstract' : 'longer description...'
+                'lng_attribute': 'GEO.id2',
+                'lat_attribute': 'geonode:tl_2013_06_tract',
             }
         """
         assert isfile(fname_to_upload), "File to upload not found: %s" % fname_to_upload
         assert isinstance(params, dict), "params must be a dict {}"
         
-        for k in ('title', 'lat_column', 'lon_column'):
+        for k in ('title', 'abstract', 'lat_attribute', 'lng_attribute'):
             assert params.has_key(k), "params is missing key: %s" % k
 
 

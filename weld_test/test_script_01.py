@@ -111,11 +111,13 @@ class BrowseTester:
             # -------------------------------
             # Make/Publish Dataset
             # -------------------------------
-            self.make_dataset_including_file(self.get_test_song_dataset_params(),
+            for ds in range(1,10):
+                self.make_dataset_including_file(self.get_test_song_dataset_params(),
                                     delete_temp_file=True,
                                     publish_it=True,
                                     upload_file_path2=self.get_random_test_filepath()
                                     )
+                self.sdriver.goto_link("/")
             pause_script()
             self.check_name()
 
@@ -437,7 +439,7 @@ def run_as_user(dataverse_url, auth, expected_name):
     tester.run_routine2(100)#(700)
 
 
-AUTH_LIST = ( ( 'admin', 'admin', 'Admin Dataverse' ),
+AUTH_LIST = ( ( 'admin', 'admin', 'Dataverse Admin' ),
               ( 'js', 'one234', 'Joe Smith' ),
               ( 'ted', 'teddy123', 'Teddy Roosevelt' ),
               ( 'rweld', 'weld123', 'R Weld' ),

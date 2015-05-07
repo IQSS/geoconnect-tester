@@ -24,3 +24,14 @@ def load_settings_dict(fname='settings.json'):
             assert SETTINGS_DICT.has_key(k), "Settings file must have key '%s'" % k
         
     return SETTINGS_DICT
+
+
+def get_setting(key_name):
+
+    assert key_name is not None, 'key_name cannot be None'
+
+    val = load_settings_dict().get(key_name, None)
+
+    assert val is not None, 'Key "%s" not found in settings file' % key_name
+
+    return val
